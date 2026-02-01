@@ -643,44 +643,60 @@ function showToolbar() {
     }
 
     // ✅ sélection simple (sans édition)
-    function setActive(pageIndex, objectId, blockEl) {
-      ensureToolbar();
-      if (!toolbar) return;
+function setActive(pageIndex, objectId, blockEl) {
+  ensureToolbar(); // Toujours vérifier que la toolbar est créée
+  if (!toolbar) return;
 
-      const obj = (typeof getObject === "function") ? getObject(pageIndex, objectId) : null;
-      if (!obj) return;
+  const obj = (typeof getObject === "function") ? getObject(pageIndex, objectId) : null;
+  if (!obj) return;
 
-      const contentEl = blockEl?.querySelector?.('[data-role="richtext"]');
-      if (!contentEl) return;
+  const contentEl = blockEl?.querySelector?.('[data-role="richtext"]');
+  if (!contentEl) return;
 
-      // si déjà en édition sur le même obj => juste reposition
-      if (active && active.isEditing && active.objectId === String(objectId)) {
-        reposition();
-        return;
-      }
+  // 🔄 Si édition sur le même object => repositionner seulement
+  if (active && active.isEditing && active.objectId === String(objectId)) {
+    reposition();
+    return;
+  }
 
-      active = {
-        pageIndex,
-        objectId: String(objectId),
-        obj,
-        el: blockEl,
-        contentEl,
-        overlayEl: null,
-        isEditing: false,
-      };
-      savedRange = null;
+  // 🔄 Mémorisation de l'objet actif (édité)
+  active = {
+    pageIndex,
+    objectId: String(objectId),
+    obj,
+    el: blockEl,
+    contentEl,
+    overlayEl: null,
+    isEditing: false, // Actuellement hors du mode édition
+  };
 
-      try { setEditingState(false, null); } catch (_) {}
-      contentEl.contentEditable = "false";
-      blockEl.classList.remove("is-editing");
+  savedRange = null;
 
-      applyBlockStylesFromObj();
+  try { setEditingState(false, null); } catch (_) {}
+  
+  // Désactiver l'édition sur le bloc
+  contentEl.contentEditable = "false";
+  blockEl.classList.remove("is-editing");
 
-      try { toolbar.updateFromContext(); } catch (_) {}
-	  console.log("[Paragraph] setActive -> toolbar el", !!toolbar?.el, "display=", toolbar?.el?.style?.display);
-	  showToolbar();  
-      reposition();
-    }
+  applyBlockStylesFromObj(); // Appliquer les styles définis sur l’objet
+
+  try { 
+    toolbar.updateFromContext(); 
+  } catch (_) {}
+
+  // 🔄 Modifications : Contrôle explicite de l'affichage de la toolbar
+  if (active.isEditing) {
+    // Si on est en mode édition, afficher la toolbar
+    console.log("[Paragraph] setActive -> toolbar affichée pour bloc édité");
+    showToolbar(); // Appeler explicitement l'affichage
+  } else {
+    // Si hors édition, cacher la toolbar
+    console.log("[Paragraph] setActive -> toolbar cachée (édition désactivée)");
+    hideToolbar(); // Appeler explicitement pour cacher
+  }
+
+  reposition(); // Repositionner la toolbar si elle est visible
+}
 
     function clearActive() {
       // si édition => commit + exit
@@ -740,8 +756,9 @@ function showToolbar() {
     }
 
     function onMoveOrResize() {
-      reposition();
-    }
+    reposition(); // Met à jour la position
+    hideToolbar(); // Cache la toolbar pendant le mouvement
+}
 
     // -------------------------------------------------------------------------
     // ✅ Global handlers (aligné text_simple_tools.js)
@@ -789,6 +806,7 @@ function showToolbar() {
         return;
       }
       clearActive();
+	  hideToolbar();
     }
 
     function onDocumentKeyDown(e) {
