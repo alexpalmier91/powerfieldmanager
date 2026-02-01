@@ -1,0 +1,560 @@
+{# app/templates/agent/client_detail.html #}
+{% extends "_layouts/app.html" %}
+
+{# --- Macro helper de traduction avec fallback --- #}
+{% macro tr(key, default) -%}
+  {%- if _ is defined -%}
+    {%- set v = _(key) -%}
+    {{- v if v and v != key else default -}}
+  {%- elif t is defined -%}
+    {%- set v = t(lang, key) -%}
+    {{- v if v and v != key else default -}}
+  {%- else -%}
+    {{- default -}}
+  {%- endif -%}
+{%- endmacro %}
+
+{% block title %}
+  {{ tr("agent.client_detail.title", "Fiche client") }}
+{% endblock %}
+
+{% block breadcrumb %}
+  {{ tr("agent.client_detail.breadcrumb", "Fiche client") }}
+{% endblock %}
+
+{% block content %}
+<div id="agentClientDetailRoot"
+     data-client-id="{{ client_id }}"
+     data-api-prefix="{{ api_prefix }}"
+     data-lang="{{ lang }}">
+
+  {# Carte de titre / intro, dans l'esprit du dashboard #}
+  <div class="card" style="margin-bottom:16px;">
+    <h2 style="margin:0 0 6px;">
+      {{ tr("agent.client_detail.title", "Fiche client") }}
+    </h2>
+    <p style="margin:0; color:#6b7280; font-size:13px;">
+      {{ tr("agent.client_detail.subtitle", "Vue globale du client : informations, commandes, CA, produits et rendez-vous.") }}
+    </p>
+  </div>
+
+  {# Carte principale avec layout 2 colonnes comme le dashboard #}
+  <div class="card" style="padding:16px;">
+    <div class="acd-layout"
+         style="
+           display:flex;
+           flex-wrap:wrap;
+           gap:16px;
+         ">
+
+      <!-- Colonne de gauche : infos client + bancaires -->
+      <section class="acd-card acd-client-info"
+               style="
+                 flex:1 1 260px;
+                 max-width:420px;
+                 display:flex;
+                 flex-direction:column;
+                 gap:12px;
+               ">
+        <div style="
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+          padding:12px 14px;
+          background:#f9fafb;
+        ">
+          <header class="acd-card-header" style="margin-bottom:8px;">
+            <h2 class="acd-card-title"
+                style="margin:0; font-size:14px; text-transform:uppercase; color:#6b7280;">
+              {{ tr("agent.client_detail.tabs.info", "Informations client") }}
+            </h2>
+          </header>
+
+          <div class="acd-card-body" id="acd-client-info">
+            <!-- Rempli en JS -->
+            <div class="acd-skeleton-block"></div>
+            <div class="acd-skeleton-block"></div>
+            <div class="acd-skeleton-block small"></div>
+          </div>
+        </div>
+
+        <!-- Sous-section : informations bancaires -->
+        <section class="acd-subsection"
+                 style="
+                   border-radius:8px;
+                   border:1px solid #e5e7eb;
+                   padding:12px 14px;
+                   background:#ffffff;
+                 ">
+          <h3 class="acd-subtitle"
+              style="margin:0 0 8px; font-size:13px; text-transform:uppercase; color:#6b7280;">
+            {{ tr("agent.client_detail.bank_info.title", "Informations bancaires") }}
+          </h3>
+
+          <!-- Affichage des infos bancaires -->
+          <div id="acd-bank-info" style="margin-bottom:8px;">
+            <p class="acd-muted" style="margin:0; font-size:12px; color:#9ca3af;">
+              {{ tr("agent.client_detail.bank_info.empty",
+                    "Aucune information bancaire enregistrée pour le moment.") }}
+            </p>
+          </div>
+
+          <!-- Formulaire d’édition des coordonnées bancaires -->
+          <div class="acd-bank-edit" style="margin-top:8px;">
+            <h4 class="acd-subsubtitle"
+                style="margin:0 0 6px; font-size:13px; font-weight:600;">
+              {{ tr("agent.client_detail.bank_info.title", "Informations bancaires") }}
+            </h4>
+
+            <div class="acd-form-grid"
+                 style="
+                   display:grid;
+                   grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+                   gap:8px;
+                   margin-bottom:8px;
+                 ">
+              <label style="font-size:12px; color:#4b5563;">
+                IBAN
+                <input type="text" id="acd-bank-iban" class="acd-input" autocomplete="off"
+                       style="width:100%; margin-top:2px;">
+              </label>
+
+              <label style="font-size:12px; color:#4b5563;">
+                BIC
+                <input type="text" id="acd-bank-bic" class="acd-input" autocomplete="off"
+                       style="width:100%; margin-top:2px;">
+              </label>
+
+              <label style="font-size:12px; color:#4b5563;">
+                {{ tr("agent.client_detail.bank_info.payment_terms", "Conditions de paiement") }}
+                <input type="text" id="acd-bank-payment-terms" class="acd-input" autocomplete="off"
+                       style="width:100%; margin-top:2px;">
+              </label>
+
+              <label style="font-size:12px; color:#4b5563;">
+                {{ tr("agent.client_detail.bank_info.credit_limit", "Encours autorisé (EUR)") }}
+                <input type="number" step="0.01" id="acd-bank-credit-limit" class="acd-input" autocomplete="off"
+                       style="width:100%; margin-top:2px;">
+              </label>
+
+              <label style="font-size:12px; color:#4b5563;">
+                {{ tr("agent.client_detail.bank_info.sepa_ref", "Réf. mandat SEPA") }}
+                <input type="text" id="acd-bank-sepa-ref" class="acd-input" autocomplete="off"
+                       style="width:100%; margin-top:2px;">
+              </label>
+            </div>
+
+            <button type="button"
+                    class="acd-btn"
+                    id="acd-bank-save"
+                    style="font-size:13px; padding:6px 10px;">
+              {{ tr("agent.client_detail.bank_info.save", "Enregistrer") }}
+            </button>
+
+            <p class="acd-muted" style="margin-top:4px; font-size:11px; color:#9ca3af;">
+              {{ tr("agent.client_detail.bank_info.note",
+                    "Ces informations sont purement indicatives et n’ont pas valeur contractuelle.") }}
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <!-- Colonne droite : onglets (commandes, CA, produits, commandes labo, rendez-vous) -->
+      <section class="acd-main"
+               style="
+                 flex:3 1 360px;
+                 min-width:320px;
+               ">
+        <div style="
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+          padding:12px 14px;
+          background:#ffffff;
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+        ">
+
+          <div class="acd-tabs"
+               style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #e5e7eb; padding-bottom:4px;">
+            <button class="acd-tab acd-tab-active" data-tab="orders"
+                    style="border-radius:999px; border:none; padding:4px 10px; font-size:12px; background:#e5e7eb;">
+              {{ tr("agent.client_detail.tabs.orders", "Commandes") }}
+            </button>
+            <button class="acd-tab" data-tab="revenue"
+                    style="border-radius:999px; border:none; padding:4px 10px; font-size:12px; background:transparent;">
+              {{ tr("agent.client_detail.tabs.revenue", "Chiffre d’affaires") }}
+            </button>
+            <button class="acd-tab" data-tab="products"
+                    style="border-radius:999px; border:none; padding:4px 10px; font-size:12px; background:transparent;">
+              {{ tr("agent.client_detail.tabs.products", "Produits les plus achetés") }}
+            </button>
+            {# NOUVEL ONGLET : Commandes Labo #}
+            <button class="acd-tab" data-tab="lab-orders"
+                    style="border-radius:999px; border:none; padding:4px 10px; font-size:12px; background:transparent;">
+              {{ tr("agent.client_detail.tabs.lab_orders", "Commandes Labo") }}
+            </button>
+            <button class="acd-tab" data-tab="appointments"
+                    style="border-radius:999px; border:none; padding:4px 10px; font-size:12px; background:transparent;">
+              {{ tr("agent.client_detail.tabs.appointments", "Rendez-vous") }}
+            </button>
+          </div>
+
+          <!-- Onglet : Commandes -->
+          <div class="acd-tab-panel acd-tab-panel-active" id="acd-tab-orders" style="margin-top:4px;">
+            <div class="acd-panel-header"
+                 style="
+                   display:flex;
+                   justify-content:space-between;
+                   align-items:center;
+                   margin-bottom:6px;
+                 ">
+              <h3 style="margin:0; font-size:14px;">
+                {{ tr("agent.client_detail.orders.title", "Dernières commandes") }}
+              </h3>
+              <div class="acd-pagination-controls" style="display:flex; align-items:center; gap:4px;">
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-orders-prev"
+                        style="padding:2px 6px; font-size:12px;">‹</button>
+                <span id="acd-orders-pageinfo"
+                      class="acd-muted"
+                      style="font-size:12px; color:#9ca3af;"></span>
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-orders-next"
+                        style="padding:2px 6px; font-size:12px;">›</button>
+              </div>
+            </div>
+
+            <div class="acd-table-wrap" style="max-height:260px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+              <table class="acd-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                  <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.orders.number", "N°") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.orders.date", "Date") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.orders.status", "Statut") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.orders.total_ht", "Total HT") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;"></th>
+                  </tr>
+                </thead>
+                <tbody id="acd-orders-tbody">
+                  <tr>
+                    <td colspan="5" class="acd-empty"
+                        style="padding:8px; text-align:center; color:#9ca3af;">
+                      {{ tr("agent.client_detail.orders.loading", "Chargement des commandes...") }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Détail commande Agent -->
+            <div class="acd-order-detail" id="acd-order-detail" hidden
+                 style="margin-top:10px;">
+              <h4 id="acd-order-detail-title"
+                  style="margin:0 0 6px; font-size:14px;"></h4>
+              <div class="acd-table-wrap"
+                   style="max-height:220px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+                <table class="acd-table acd-table-sm"
+                       style="width:100%; border-collapse:collapse; font-size:13px;">
+                  <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                    <tr>
+                      <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.order_detail.product", "Produit") }}
+                      </th>
+                      <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.order_detail.sku", "Réf.") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.order_detail.qty", "Quantité") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.order_detail.unit_ht", "PU HT") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.order_detail.total_ht", "Total HT") }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="acd-order-items-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Onglet : Chiffre d’affaires -->
+          <div class="acd-tab-panel" id="acd-tab-revenue" style="margin-top:4px;">
+            <div class="acd-panel-header"
+                 style="
+                   display:flex;
+                   justify-content:space-between;
+                   align-items:center;
+                   margin-bottom:6px;
+                 ">
+              <h3 style="margin:0; font-size:14px;">
+                {{ tr("agent.client_detail.revenue.title", "Chiffre d’affaires") }}
+              </h3>
+              <div class="acd-revenue-filters" style="display:flex; gap:6px; align-items:center; font-size:12px;">
+                <select id="acd-revenue-period" class="acd-select"
+                        style="padding:2px 6px; font-size:12px;">
+                  <option value="30d">30 jours</option>
+                  <option value="90d">90 jours</option>
+                  <option value="12m" selected>12 mois</option>
+                  <option value="custom">Personnalisé</option>
+                </select>
+                <input type="date" id="acd-revenue-start" class="acd-input-date" hidden
+                       style="font-size:12px;">
+                <input type="date" id="acd-revenue-end" class="acd-input-date" hidden
+                       style="font-size:12px;">
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-revenue-apply"
+                        style="padding:2px 8px; font-size:12px;">
+                  {{ tr("agent.client_detail.revenue.apply", "Appliquer") }}
+                </button>
+              </div>
+            </div>
+
+            <div class="acd-revenue-summary"
+                 style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+              <span class="acd-muted"
+                    style="font-size:12px; color:#9ca3af;">
+                {{ tr("agent.client_detail.revenue.total_label", "CA total sur la période") }}
+              </span>
+              <span id="acd-revenue-total"
+                    class="acd-revenue-amount"
+                    style="font-size:16px; font-weight:700;">–</span>
+            </div>
+
+            <div class="acd-chart-wrap" style="height:260px;">
+              <canvas id="acd-revenue-chart" height="120"></canvas>
+            </div>
+          </div>
+
+          <!-- Onglet : Produits les plus achetés -->
+          <div class="acd-tab-panel" id="acd-tab-products" style="margin-top:4px;">
+            <div class="acd-panel-header"
+                 style="
+                   display:flex;
+                   justify-content:space-between;
+                   align-items:center;
+                   margin-bottom:6px;
+                 ">
+              <h3 style="margin:0; font-size:14px;">
+                {{ tr("agent.client_detail.products.title", "Produits les plus achetés") }}
+              </h3>
+              <div class="acd-revenue-filters" style="display:flex; gap:6px; align-items:center; font-size:12px;">
+                <select id="acd-products-period" class="acd-select"
+                        style="padding:2px 6px; font-size:12px;">
+                  <option value="30d">30 jours</option>
+                  <option value="90d">90 jours</option>
+                  <option value="12m" selected>12 mois</option>
+                  <option value="custom">Personnalisé</option>
+                </select>
+                <input type="date" id="acd-products-start" class="acd-input-date" hidden
+                       style="font-size:12px;">
+                <input type="date" id="acd-products-end" class="acd-input-date" hidden
+                       style="font-size:12px;">
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-products-apply"
+                        style="padding:2px 8px; font-size:12px;">
+                  {{ tr("agent.client_detail.products.apply", "Appliquer") }}
+                </button>
+              </div>
+            </div>
+
+            <div class="acd-table-wrap" style="max-height:260px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+              <table class="acd-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                  <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.products.table.name", "Produit") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.products.table.sku", "Réf.") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.products.table.qty", "Quantité") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.products.table.total_ht", "Total HT") }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="acd-products-tbody">
+                  <tr>
+                    <td colspan="4" class="acd-empty"
+                        style="padding:8px; text-align:center; color:#9ca3af;">
+                      {{ tr("agent.client_detail.products.loading", "Chargement...") }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {# ONGLET : Commandes Labo #}
+          <div class="acd-tab-panel" id="acd-tab-lab-orders" style="margin-top:4px;">
+            <div class="acd-panel-header"
+                 style="
+                   display:flex;
+                   justify-content:space-between;
+                   align-items:center;
+                   margin-bottom:6px;
+                 ">
+              <h3 style="margin:0; font-size:14px;">
+                {{ tr("agent.client_detail.lab_orders.title", "Commandes Labo associées") }}
+              </h3>
+              <div class="acd-pagination-controls" style="display:flex; align-items:center; gap:4px;">
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-laborders-prev"
+                        style="padding:2px 6px; font-size:12px;">‹</button>
+                <span id="acd-laborders-pageinfo"
+                      class="acd-muted"
+                      style="font-size:12px; color:#9ca3af;"></span>
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-laborders-next"
+                        style="padding:2px 6px; font-size:12px;">›</button>
+              </div>
+            </div>
+
+            <div class="acd-table-wrap" style="max-height:260px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+              <table class="acd-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                  <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.lab_orders.number", "Document") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.lab_orders.type", "Type") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb%;">
+                      {{ tr("agent.client_detail.lab_orders.date", "Date") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.lab_orders.labo", "Labo") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.lab_orders.total_ht", "Total HT") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;"></th>
+                  </tr>
+                </thead>
+                <tbody id="acd-laborders-tbody">
+                  <tr>
+                    <td colspan="6" class="acd-empty"
+                        style="padding:8px; text-align:center; color:#9ca3af;">
+                      {{ tr("agent.client_detail.lab_orders.loading", "Chargement...") }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {# Détail document Labo #}
+            <div class="acd-order-detail" id="acd-laborder-detail" hidden
+                 style="margin-top:10px;">
+              <h4 id="acd-laborder-detail-title"
+                  style="margin:0 0 6px; font-size:14px;"></h4>
+              <div class="acd-table-wrap"
+                   style="max-height:220px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+                <table class="acd-table acd-table-sm"
+                       style="width:100%; border-collapse:collapse; font-size:13px;">
+                  <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                    <tr>
+                      <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.lab_orders.detail.product", "Produit") }}
+                      </th>
+                      <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.lab_orders.detail.sku", "Réf.") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.lab_orders.detail.qty", "Quantité") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.lab_orders.detail.unit_ht", "PU HT") }}
+                      </th>
+                      <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                        {{ tr("agent.client_detail.lab_orders.detail.total_ht", "Total HT") }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="acd-laborder-items-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Onglet : Rendez-vous -->
+          <div class="acd-tab-panel" id="acd-tab-appointments" style="margin-top:4px;">
+            <div class="acd-panel-header"
+                 style="
+                   display:flex;
+                   justify-content:space-between;
+                   align-items:center;
+                   margin-bottom:6px;
+                 ">
+              <h3 style="margin:0; font-size:14px;">
+                {{ tr("agent.client_detail.appointments.title", "Historique des rendez-vous") }}
+              </h3>
+              <div class="acd-pagination-controls" style="display:flex; align-items:center; gap:4px;">
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-appt-prev"
+                        style="padding:2px 6px; font-size:12px;">‹</button>
+                <span id="acd-appt-pageinfo"
+                      class="acd-muted"
+                      style="font-size:12px; color:#9ca3af;"></span>
+                <button type="button" class="acd-btn acd-btn-ghost" id="acd-appt-next"
+                        style="padding:2px 6px; font-size:12px;">›</button>
+              </div>
+            </div>
+
+            <div class="acd-table-wrap" style="max-height:260px; overflow:auto; border-radius:6px; border:1px solid #e5e7eb;">
+              <table class="acd-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                  <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.appointments.table.date", "Date") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.appointments.table.notes", "Notes") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.appointments.table.status", "Statut") }}
+                    </th>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ tr("agent.client_detail.appointments.table.agent", "Agent") }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;"></th>
+                  </tr>
+                </thead>
+                <tbody id="acd-appt-tbody">
+                  <tr>
+                    <td colspan="5" class="acd-empty"
+                        style="padding:8px; text-align:center; color:#9ca3af;">
+                      {{ tr("agent.client_detail.appointments.loading", "Chargement...") }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Zone messages -->
+  <div id="acd-toast-zone"></div>
+</div>
+{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet"
+        href="{{ url_for('static', path='agent/agent_client_detail.css') }}">
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ 		   <script src="/static/agent/agent_client_detail.js"></script>
+{% endblock %}

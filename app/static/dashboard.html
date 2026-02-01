@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zentro – Tableau de bord Labo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; color: #111827; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    h1 { color:#2563eb; margin:0; }
+    a.link { color:#2563eb; text-decoration:none; }
+    a.link:hover { text-decoration:underline; }
+    input[type="file"], input[type="text"], button { margin: 0.4rem 0; padding: 0.45rem 0.7rem; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+    th { background: #f9fafb; }
+    #status { margin-top: 1rem; padding: 0.6rem; border-radius: 6px; background: #f9fafb; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #loader { display: none; margin-left: 8px; vertical-align: middle; }
+    .muted { color:#6b7280; font-size:12px; }
+    .toolbar { display:flex; gap:8px; align-items:center; }
+    .progress-wrap { margin-top: 6px; width: 320px; height: 10px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+    progress { width: 320px; height: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Tableau de bord du Laboratoire</h1>
+    <div class="toolbar">
+      <a class="link" href="/login" onclick="localStorage.removeItem('zentro_token')">Se déconnecter</a>
+    </div>
+  </header>
+
+  <section id="import">
+    <h2>Import produits CSV/XLSX</h2>
+    <form id="upload-form">
+      <input type="file" id="file" name="file" accept=".csv,.xlsx" required />
+      <button type="submit">Importer</button>
+      <img id="loader" src="https://i.imgur.com/llF5iyg.gif" width="20" alt="..." />
+    </form>
+    <p class="muted">
+      <a class="link" href="/api-zenhub/imports/products/template">📄 Télécharger le modèle CSV</a>
+      — Colonnes supportées (CSV/XLSX) : <code>sku, name, price_ht, stock, ean13, description, image_url</code><br>
+      — XLSX (ex.) : <code>Référence, Article, Prix de vente HT, Quantité, Product Cover Image Url, EAN</code>
+    </p>
+
+    <div id="status">—</div>
+    <div class="progress-wrap" style="margin-top:6px;">
+      <progress id="progress" max="100" value="0"></progress>
+    </div>
+    <div id="stats" class="muted" style="margin-top:4px;"></div>
+  </section>
+
+  <section id="list">
+    <h2>Produits</h2>
+    <input id="q" type="text" placeholder="🔍 Rechercher SKU / nom / EAN" oninput="loadProducts()" />
+    <table id="products">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>SKU</th>
+          <th>Nom</th>
+          <th>EAN13</th>
+          <th>Prix HT</th>
+          <th>Stock</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script>
+    const API_BASE = "/api-zenhub";
+
+    // 🔐 Session
+    const token = localStorage.getItem("zentro_token");
+    if (!token) {
+      window.location.href = "/login";
+    }
+    const authHeaders = { "Authorization": `Bearer ${token}` };
+
+    // 👇 util: lit un item produit peu importe le “shape” (ancien vs nouveau)
+    function pickField(item, pathArray, fallback = "") {
+      // essaie chemin A (nouveau): item.<field>
+      let v = item;
+      for (const k of pathArray) {
+        if (v && k in v) v = v[k];
+        else { v = undefined; break; }
+      }
+      if (v !== undefined && v !== null && v !== "") return v;
+
+      // essaie chemin B (ancien): item.product.<field>
+      v = item.product;
+      for (const k of pathArray) {
+        if (v && k in v) v = v[k];
+        else { v = undefined; break; }
+      }
+      if (v !== undefined && v !== null && v !== "") return v;
+
+      // essaie variant[0] pour price/stock/ean (ancien modèle)
+      if (item.variants && item.variants.length) {
+        const v0 = item.variants[0];
+        const last = pathArray[pathArray.length - 1];
+        if (v0 && (last in v0)) return v0[last] ?? fallback;
+      }
+
+      return fallback;
+    }
+
+    async function loadProducts() {
+      try {
+        const q = document.getElementById("q").value.trim();
+
+        // Essaye d’appeler sans params (backend déduit labo_id via le token).
+        // Si ton nouvel endpoint exige un labo_id en query, adapte ici.
+        const url = `${API_BASE}/products${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+        const res = await fetch(url, { headers: authHeaders });
+
+        if (!res.ok) throw new Error(`GET /products → HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+
+        const tbody = document.querySelector("#products tbody");
+        tbody.innerHTML = "";
+
+        items.forEach(p => {
+          // champs (multi-shape)
+          const sku      = pickField(p, ["sku"], "");
+          const name     = pickField(p, ["name"], "");
+          const imgUrl   = pickField(p, ["image_url"], "");
+          const ean13    = pickField(p, ["ean13"], "");
+          const price    = pickField(p, ["price_ht"], "");
+          const stock    = pickField(p, ["stock"], "");
+
+          const tr = document.createElement("tr");
+          const img = imgUrl ? `<img src="${imgUrl}" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #eee;">` : "";
+          tr.innerHTML = `
+            <td>${img}</td>
+            <td>${sku}</td>
+            <td>${name}</td>
+            <td>${ean13 || ""}</td>
+            <td>${price !== "" ? Number(price).toFixed(2) : ""}</td>
+            <td>${stock ?? ""}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        document.querySelector("#status").textContent = `Erreur chargement produits: ${err.message || err}`;
+      }
+    }
+
+    document.getElementById("upload-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const file = document.getElementById("file").files[0];
+      if (!file) return;
+      document.getElementById("loader").style.display = "inline";
+
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+
+        const res = await fetch(`${API_BASE}/imports/products`, {
+          method: "POST",
+          headers: authHeaders, // ⚠️ ne pas fixer Content-Type, FormData s’en charge
+          body: fd
+        });
+
+        if (!res.ok) {
+          const txt = await res.text().catch(()=>res.statusText);
+          throw new Error(`HTTP ${res.status} ${txt}`);
+        }
+
+        const job = await res.json(); // { task_id, ... }
+        document.getElementById("status").textContent = "⏳ Import démarré : " + job.task_id;
+        checkStatus(job.task_id);
+      } catch (err) {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("status").textContent = `Erreur import: ${err.message || err}`;
+      }
+    });
+
+    async function checkStatus(id) {
+      const box = document.getElementById("status");
+      const loader = document.getElementById("loader");
+      const prog = document.getElementById("progress");
+      const stats = document.getElementById("stats");
+
+      const poll = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/imports/${id}`, { headers: authHeaders });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const j = await res.json();
+
+          const done = (j.inserted || 0) + (j.updated || 0) + ((j.errors?.length) || 0);
+          const pct = j.total_rows ? Math.round((done / j.total_rows) * 100) : 0;
+          box.textContent = `Statut: ${j.status} — ${done}/${j.total_rows} (${pct}%)`;
+          if (prog) prog.value = pct;
+          if (stats) stats.textContent = `+${j.inserted} insérés, ${j.updated} mis à jour, ${(j.errors?.length)||0} erreurs`;
+
+          if (j.status === "PENDING") {
+            setTimeout(poll, 1500);
+          } else {
+            loader.style.display = "none";
+            loadProducts();
+          }
+        } catch (err) {
+          loader.style.display = "none";
+          box.textContent = `Erreur statut: ${err.message || err}`;
+        }
+      };
+      poll();
+    }
+
+    // ▶︎ initial
+    loadProducts();
+  </script>
+</body>
+</html>

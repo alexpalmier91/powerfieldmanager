@@ -1,0 +1,31 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}Import produits PrestaShop{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Import produits depuis PrestaShop</h1>
+
+  <div style="margin-top:16px;">
+    <label for="laboSelect">Laboratoire</label>
+    <select id="laboSelect"></select>
+  </div>
+
+  <button id="btnImport" style="margin-top:16px;">
+    Importer depuis PrestaShop
+  </button>
+
+  <div id="importStatus" style="margin-top:24px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- 🔴 1. Injection DATA AVANT le JS -->
+<script>
+  window.__LABOS__ = {{ labos | tojson }};
+  console.log("[IMPORT_PRODUCT_PRESTASHOP] LABOS injected:", window.__LABOS__);
+</script>
+
+<!-- 🔴 2. Ensuite SEULEMENT le JS -->
+<script src="/static/superuser/import_product_prestashop.js?version4"></script>
+{% endblock %}

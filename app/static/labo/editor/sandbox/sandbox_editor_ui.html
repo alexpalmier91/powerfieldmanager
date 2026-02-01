@@ -1,0 +1,156 @@
+<!-- app/static/labo/editor/sandbox/sandbox_editor_ui.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sandbox PDF Editor UI</title>
+
+  <!-- UI -->
+  <link rel="stylesheet" href="../editor_ui.css?v=2">
+
+  <!-- =========================================================
+       ✅ CUSTOM FONTS (TTF) – sandbox_editor_ui
+       Fonts live: /assets/fonts_global/*.ttf
+       ========================================================= -->
+  <style>
+    @font-face{
+      font-family:"GLOBAL_FONT_Pacifico";
+      src:url("/assets/fonts_global/Pacifico-Regular.ttf") format("truetype");
+      font-display:swap;
+      font-weight:400;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_Oswald";
+      src:url("/assets/fonts_global/Oswald-VariableFont_wght.ttf") format("truetype");
+      font-display:swap;
+      font-weight:100 900;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_Roboto";
+      src:url("/assets/fonts_global/Roboto-VariableFont_wdth,wght.ttf") format("truetype");
+      font-display:swap;
+      font-weight:100 900;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_PermanentMarker";
+      src:url("/assets/fonts_global/PermanentMarker-Regular.ttf") format("truetype");
+      font-display:swap;
+      font-weight:400;
+      font-style:normal;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="editor" id="editorRoot">
+    <!-- 1) TOOL RAIL -->
+    <div class="tool-rail" id="toolRail"></div>
+
+    <!-- 2) PAGES -->
+    <div class="pages-panel">
+      <div class="pages-list" id="pagesList"></div>
+      <button class="btn primary" id="btnAddPage">+ Ajouter page</button>
+    </div>
+
+    <!-- 3) CANVAS -->
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-toolbar">
+        <button class="btn" id="btnZoomIn">+</button>
+        <button class="btn" id="btnZoomOut">-</button>
+        <button class="btn" id="btnZoomFit">Fit</button>
+        <div class="zoom-pill" id="zoomPill">100%</div>
+      </div>
+
+      <div class="canvas-stage">
+        <div id="pageContainer"></div>
+      </div>
+    </div>
+
+    <!-- 4) OPTIONS -->
+    <div class="options-panel">
+      <div id="optionsEmpty" class="muted">Sélectionne un bloc</div>
+
+      <div id="optionsForm" class="hidden">
+        <div class="panel-title">Bloc</div>
+
+        <div class="field"><label>X</label><input type="number" id="optX"></div>
+        <div class="field"><label>Y</label><input type="number" id="optY"></div>
+        <div class="field"><label>Largeur</label><input type="number" id="optW"></div>
+        <div class="field"><label>Hauteur</label><input type="number" id="optH"></div>
+        <div class="field"><label>Rotation</label><input type="number" id="optR"></div>
+        <div class="field"><label>Opacité</label><input type="number" step="0.05" min="0" max="1" id="optO"></div>
+
+        <div class="divider"></div>
+        <div id="optionsExtra" class="muted small"><!-- hook --></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       ✅ Google Fonts loader (lazy)
+       IMPORTANT: doit être chargé AVANT window.EDITOR_FONTS
+       ========================================================= -->
+  <script src="../google_fonts_loader.js?v=1"></script>
+
+  <script>
+    // Exemple : ton catalogue (tu peux en mettre 200+ ici)
+    ZHGoogleFontsTools.setCatalog([
+      "Inter",
+      "Poppins",
+      "Montserrat",
+      "Oswald",
+      "Playfair Display",
+      "Bebas Neue",
+      "Anton",
+      "Raleway",
+      "Nunito",
+      "Merriweather",
+    ]);
+
+    // Merge final (tu peux aussi le faire dans editor_state.js si tu préfères)
+    window.EDITOR_FONTS = [
+      { name:"helv", label:"Helvetica (défaut)", scope:"default", isDefault:true },
+
+      // tes fonts locales
+      { name:"GLOBAL_FONT_Pacifico", label:"Pacifico (local)", scope:"global", url:"/assets/fonts_global/Pacifico-Regular.ttf" },
+
+      // google fonts (lazy-load)
+      ...ZHGoogleFontsTools.buildFontList({ scope:"global", weightsDefault:"400;700" })
+    ];
+
+    // petit preload des 8 premières
+    ZHGoogleFontsTools.preloadTop(8);
+  </script>
+
+  <!-- Core editor -->
+  <script src="../editor_state.js?v=4"></script>
+  <script src="../editor_render.js?v=4"></script>
+  <script src="../editor_interactions.js?v=4"></script>
+
+  <!-- deps UI (ordre important) -->
+  <script src="../font_picker_tools.js?v=4"></script>
+  <script src="../color_picker_tools.js?v=4"></script>
+  <script src="../text_toolbar_tools.js?v=4"></script>
+
+  <!-- text line module + adapter -->
+  <script src="../text_simple_tools.js?v=4"></script>
+  <script src="../editor_text_simple_adapter.js?v=4"></script>
+
+  <!-- paragraph module + adapter -->
+  <script src="../paragraph_tools.js?v=4"></script>
+  <script src="../editor_paragraph_adapter.js?v=4"></script>
+
+  <!-- shapes -->
+  <script src="../shape_block_tools.js?v=203b"></script>
+  <script src="../editor_shape_adapter.js?v=4"></script>
+
+  <!-- bridge + init -->
+
+  <script src="../editor_app_init.js?v=4"></script>
+  <script src="../editor_tools_bridge.js?v=4"></script>
+</body>
+</html>

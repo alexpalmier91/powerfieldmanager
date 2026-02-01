@@ -1,0 +1,110 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}{% if labo_id %}Éditer labo{% else %}Nouveau labo{% endif %}{% endblock %}
+{% block breadcrumb %}Superuser / <a href="/superuser/labos">Labos</a> / {% if labo_id %}{{ labo_id }}{% else %}Nouveau{% endif %}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0;">{% if labo_id %}Éditer le labo{% else %}Créer un labo{% endif %}</h1>
+        <p style="margin:6px 0 0; color:#6b7280;">Profil complet + logo affiché sur les PDF (factures / bons de commande).</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a class="btn" href="/superuser/labos">← Retour</a>
+        <button id="btnSave" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div id="formError" style="display:none; color:#b91c1c; margin-bottom:12px;"></div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div>
+        <label>Nom labo *</label>
+        <input id="name" class="input" />
+      </div>
+      <div>
+        <label>Raison sociale</label>
+        <input id="legal_name" class="input" />
+      </div>
+
+      <div>
+        <label>SIRET</label>
+        <input id="siret" class="input" />
+      </div>
+      <div>
+        <label>TVA intracom</label>
+        <input id="vat_number" class="input" />
+      </div>
+
+      <div>
+        <label>Email</label>
+        <input id="email" class="input" />
+      </div>
+      <div>
+        <label>Téléphone</label>
+        <input id="phone" class="input" />
+      </div>
+
+      <div>
+        <label>Adresse 1</label>
+        <input id="address1" class="input" />
+      </div>
+      <div>
+        <label>Adresse 2</label>
+        <input id="address2" class="input" />
+      </div>
+
+      <div>
+        <label>Code postal</label>
+        <input id="zip" class="input" />
+      </div>
+      <div>
+        <label>Ville</label>
+        <input id="city" class="input" />
+      </div>
+
+      <div>
+        <label>Pays</label>
+        <input id="country" class="input" />
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+        <input id="is_active" type="checkbox" />
+        <label for="is_active" style="margin:0;">Actif</label>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label>Texte bas de page facture (footer)</label>
+      <textarea id="invoice_footer" class="input" style="min-height:90px;"></textarea>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h2 style="margin-top:0;">Logo du labo (PDF)</h2>
+
+    <div id="logoBox" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+      <div style="width:140px; height:80px; border:1px solid #e5e7eb; border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff;">
+        <img id="logoPreview" src="" alt="logo" style="max-width:100%; max-height:100%; display:none;" />
+        <span id="logoEmpty" style="color:#6b7280;">Aucun logo</span>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input id="logoFile" type="file" accept=".png,.jpg,.jpeg,.svg" />
+        <button id="btnUploadLogo" class="btn">Uploader</button>
+        <button id="btnDeleteLogo" class="btn btn-danger" style="display:none;">Supprimer</button>
+        <span style="color:#6b7280;">Max 2 Mo • PNG/JPG (SVG possible)</span>
+      </div>
+    </div>
+
+    <div id="logoMsg" style="margin-top:10px; color:#6b7280;"></div>
+  </div>
+
+<script>
+  window.SUPERUSER_LABOS_PAGE = { mode: "form", labo_id: {{ labo_id }} };
+</script>
+<script src="/static/superuser/labos.js"></script>
+{% endblock %}

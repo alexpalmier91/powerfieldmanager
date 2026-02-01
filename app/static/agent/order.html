@@ -1,0 +1,86 @@
+<!doctype html>
+.price{ font-weight:700; }
+
+
+.rightcol{ position:sticky; top:84px; }
+.basket-line{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border); }
+.basket-line .title{ flex:1; font-size:14px; }
+.basket-line .qty{ font-weight:700; }
+.total{ display:flex; align-items:center; justify-content:space-between; padding-top:12px; font-weight:800; font-size:18px; }
+.btn-primary{ width:100%; background:var(--primary); color:#00332e; border:none; padding:12px 14px; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer; }
+.btn-primary:disabled{ opacity:.6; cursor:not-allowed; }
+.muted{ color:#6b7280; font-size:12px; }
+.empty{ text-align:center; padding:18px; color:#6b7280; }
+</style>
+</head>
+<body>
+<header>
+<div class="brand">Saisie commande • Agent</div>
+<div class="crumb">/ Dashboard / <strong>Créer une commande</strong></div>
+<div style="flex:1"></div>
+<a href="/agent/index.html" class="btn">⬅ Retour dashboard</a>
+</header>
+
+
+<div class="wrap">
+<!-- Left content: search + product list -->
+<div class="card">
+<h3>Recherche client & produits</h3>
+<div class="body">
+<div class="search-row" style="margin-bottom:12px;">
+<div class="searchbox">
+<label class="muted">Chercher client par nom / code postal / ville</label>
+<input id="clientSearch" type="text" placeholder="Ex: PHARMACIE, 75015, Lyon…" autocomplete="off" />
+<div id="clientSuggest" class="autocomplete"></div>
+</div>
+<div id="activeClientBox" style="align-self:end;">
+<span class="muted">Client actif :</span>
+<span id="activeClientTag" class="tag">aucun</span>
+</div>
+</div>
+
+
+<div class="toolbar">
+<div>
+<label class="muted">Recherche produit</label>
+<input id="productSearch" type="text" placeholder="Référence, EAN ou nom…" style="width:420px; padding:10px 12px; border:1px solid var(--border); border-radius:10px;" />
+</div>
+<div class="pill"><span id="countShown">0</span> produits affichés</div>
+</div>
+
+
+<div style="overflow:auto; max-height: calc(100vh - 280px);" id="productScroll">
+<table>
+<thead>
+<tr>
+<th>MINIATURE</th>
+<th>RÉF — NOM + EAN</th>
+<th>QTÉ</th>
+<th>PRIX</th>
+</tr>
+</thead>
+<tbody id="productRows"></tbody>
+</table>
+<div id="loadingMore" class="empty" style="display:none;">Chargement…</div>
+<div id="noMore" class="empty" style="display:none;">Fin de liste</div>
+</div>
+</div>
+</div>
+
+
+<!-- Right column: basket -->
+<div class="card rightcol">
+<h3>Panier</h3>
+<div class="body">
+<div id="basketLines"></div>
+<div class="total"><span>Total HT :</span><span id="totalHt">0,00 €</span></div>
+<button id="btnValidate" class="btn-primary" disabled>Valider la commande</button>
+<div class="muted" style="margin-top:8px;">Produits du laboratoire #1 uniquement.</div>
+</div>
+</div>
+</div>
+
+
+<script src="/static/agent/agent_order.js"></script>
+</body>
+</html>

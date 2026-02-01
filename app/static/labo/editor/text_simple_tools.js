@@ -1,0 +1,2004 @@
+/* app/static/labo/editor/text_simple_tools.js
+ * Bloc Texte Simple (single-line) — texte riche (sélection partielle) via Range/Selection API
+ * Sans dépendances externes — Firefox/Chrome
+ *
+ * ✅ Utilise:
+ *   - font_picker_tools.js  => window.FontPickerTools (popover + resolveFontFamily + helpers)
+ *   - text_toolbar_tools.js => window.TextToolbarTools (toolbar réutilisable)
+ *
+ * Object model:
+ * {
+ *   id, type:"text", mode:"line",
+ *   x,y,w,h, rotation, opacity,
+ *   text,          // plain text (innerText)
+ *   html,          // rich html (innerHTML)
+ *   color,         // couleur "défaut" (base)
+ *   align: "left"|"center"|"right",
+ *   font: { family, size, weight, style, underline, letterSpacing, transform }
+ * }
+ *
+ * API (Option B / global):
+ *   window.createTextSimpleController({ overlayEl, draft, pageIndex, fonts?, onChange? })
+ */
+
+(function (global) {
+  "use strict";
+console.log("[TS] text_simple_tools.js loaded");
+
+console.log("[TS] deps at load", {
+  TextToolbarTools: !!window.TextToolbarTools,
+  FontPickerTools: !!window.FontPickerTools,
+});
+
+  // ---------------------------------------------------------------------------
+  // Utils
+  // ---------------------------------------------------------------------------
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const deg = (r) => (r * 180) / Math.PI;
+
+  function uid(prefix = "id") {
+    return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+  }
+
+  function stop(e) {
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopPropagation(); } catch (_) {}
+  }
+
+  function isEditableTarget(el) {
+    if (!el) return false;
+    const t = el.tagName ? el.tagName.toLowerCase() : "";
+    if (t === "input" || t === "textarea" || t === "select" || t === "option" || t === "button") return true;
+    if (el.isContentEditable) return true;
+    return false;
+  }
+
+  function overlayRect(overlayEl) {
+    return overlayEl.getBoundingClientRect();
+  }
+
+  function clientToOverlayXY(overlayEl, clientX, clientY) {
+    const r = overlayRect(overlayEl);
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+
+  function setElRect(el, x, y, w, h) {
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+  }
+
+  function centerOfRect(x, y, w, h) {
+    return { cx: x + w / 2, cy: y + h / 2 };
+  }
+
+  function applyTextTransform(str, transform) {
+    const s = String(str ?? "");
+    if (transform === "upper") return s.toUpperCase();
+    if (transform === "lower") return s.toLowerCase();
+    if (transform === "capitalize") return s.replace(/\b(\p{L})/gu, (m) => m.toUpperCase());
+    return s;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+  
+  function dbgChars(label, str) {
+  const s = String(str ?? "");
+  const codes = Array.from(s).map((ch) => {
+    if (ch === " ") return "SP";
+    if (ch === "\u00A0") return "NBSP";
+    if (ch === "\u200B") return "ZWSP";
+    return ch.charCodeAt(0);
+  });
+  console.log(`[TS][DBG] ${label}`, { raw: s, codes, len: s.length });
+}
+
+
+  function normalizeFonts(fonts) {
+    if (!fonts) return [];
+    if (Array.isArray(fonts)) {
+      if (!fonts.length) return [];
+      if (typeof fonts[0] === "string") return fonts.map((f) => ({ name: f, label: f, scope: "global" }));
+      return fonts.map((f) => ({
+        name: f.name || f.family || f.label || "Arial",
+        label: f.label || f.name || f.family || "Arial",
+        scope: f.scope || "global",
+        href: f.href,
+        url: f.url,
+        format: f.format,
+        weight: f.weight,
+        style: f.style,
+        isDefault: !!f.isDefault,
+      }));
+    }
+    return [];
+  }
+
+  function ensureDraftPage(draft, pageIndex) {
+    draft.pages = draft.pages || [];
+    draft.pages[pageIndex] = draft.pages[pageIndex] || {};
+    const p = draft.pages[pageIndex];
+    p.objects = p.objects || [];
+    return p;
+  }
+
+  function getObject(draft, pageIndex, id) {
+    const p = ensureDraftPage(draft, pageIndex);
+    return p.objects.find((o) => o && o.id === id) || null;
+  }
+
+  function removeObject(draft, pageIndex, id) {
+    const p = ensureDraftPage(draft, pageIndex);
+    const i = p.objects.findIndex((o) => o && o.id === id);
+    if (i >= 0) p.objects.splice(i, 1);
+  }
+
+  function getFontPickerTools() { return global.FontPickerTools || null; }
+  function getTextToolbarTools() { return global.TextToolbarTools || null; }
+
+  function resolveFontFamilySafe(fontKeyOrFamily) {
+    const FP = getFontPickerTools();
+    if (FP && typeof FP.resolveFontFamily === "function") return FP.resolveFontFamily(fontKeyOrFamily || "helv");
+    // fallback
+    return String(fontKeyOrFamily || "helv") === "helv"
+      ? "Helvetica, Arial, sans-serif"
+      : `${fontKeyOrFamily}, Helvetica, Arial, sans-serif`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rich-text helpers (Range/Selection)
+  // ---------------------------------------------------------------------------
+  function getSelectionSafe() {
+    try { return window.getSelection(); } catch (_) { return null; }
+  }
+
+  function selectionIsInside(rootEl) {
+    const sel = getSelectionSafe();
+    if (!sel || sel.rangeCount === 0) return false;
+    const a = sel.anchorNode;
+    const f = sel.focusNode;
+    if (!a || !f) return false;
+    return rootEl.contains(a) && rootEl.contains(f);
+  }
+
+  function saveSelectionRange(editEl) {
+    const sel = getSelectionSafe();
+    if (!sel || sel.rangeCount === 0) return;
+    const r = sel.getRangeAt(0);
+    if (!editEl.contains(r.startContainer)) return;
+    editEl._savedRange = r.cloneRange();
+  }
+
+  function restoreSelectionRange(editEl) {
+    const sel = getSelectionSafe();
+    if (!sel || !editEl || !editEl._savedRange) return false;
+    try {
+      editEl.focus({ preventScroll: true });
+      sel.removeAllRanges();
+      sel.addRange(editEl._savedRange);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function needsSingleLineNormalize(editEl) {
+    if (!editEl) return false;
+    if (editEl.querySelector("br, div, p")) return true;
+    return /\n/.test(editEl.innerText || "");
+  }
+
+  function sanitizeRichSingleLine(html) {
+    let s = String(html ?? "");
+    s = s.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+    s = s.replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+    s = s.replace(/<\/?(div|p)[^>]*>/gi, " ");
+    s = s.replace(/<br\s*\/?>/gi, " ");
+    s = s.replace(/[\t\r\n]+/g, " ").trim();
+    return s || "";
+  }
+  
+  function extractPlainPreserveSpaces(editEl) {
+  // textContent garde mieux les espaces "logiques" que innerText dans certains cas
+  let s = String(editEl?.textContent ?? "");
+  // supprime les zero-width qu'on insère parfois pour le caret
+  s = s.replace(/\u200B/g, "");
+  // single-line => on remplace seulement les retours ligne
+  s = s.replace(/\r?\n/g, " ");
+  // IMPORTANT: on ne collapse PAS les espaces, sinon on peut perdre des NBSP
+  // on trim léger (optionnel) : garde l'espace interne
+  return s.trim();
+}
+
+
+  function normalizeEditorDom(editEl) {
+    const html = sanitizeRichSingleLine(editEl.innerHTML);
+    editEl.innerHTML = html;
+    if (editEl.innerHTML === "<br>" || editEl.innerHTML === "<span><br></span>") editEl.innerHTML = "";
+  }
+
+  // --- selection highlight overlay (non destructif) --------------------------
+  function ensureSelectionOverlayCssOnce() {
+    if (document.getElementById("zh_sel_overlay_css")) return;
+    const s = document.createElement("style");
+    s.id = "zh_sel_overlay_css";
+    s.textContent = `
+.zh-sel-overlay{
+  position:absolute; inset:0;
+  pointer-events:none;
+  z-index:5;
+}
+.zh-sel-overlay .r{
+  position:absolute;
+  background:rgba(37,99,235,.22);
+  box-shadow:0 0 0 1px rgba(37,99,235,.35) inset;
+  border-radius:4px;
+}`.trim();
+    document.head.appendChild(s);
+  }
+
+  function clearSelectionHighlight(editEl) {
+    if (!editEl) return;
+    const overlay = editEl._selOverlay;
+    if (overlay) {
+      try { overlay.remove(); } catch (_) {}
+      editEl._selOverlay = null;
+    }
+  }
+
+  function highlightSavedSelection(editEl) {
+    if (!editEl || !editEl._savedRange) return;
+    clearSelectionHighlight(editEl);
+
+    const r = editEl._savedRange.cloneRange();
+    if (r.collapsed) return;
+
+    ensureSelectionOverlayCssOnce();
+
+    let rects = [];
+    try { rects = Array.from(r.getClientRects()); } catch (_) { rects = []; }
+    if (!rects.length) return;
+
+    const er = editEl.getBoundingClientRect();
+
+    const overlay = document.createElement("div");
+    overlay.className = "zh-sel-overlay";
+
+    const cs = window.getComputedStyle(editEl);
+    if (cs.position === "static") editEl.style.position = "relative";
+
+    rects.forEach((rr) => {
+      const d = document.createElement("div");
+      d.className = "r";
+      d.style.left = `${rr.left - er.left}px`;
+      d.style.top = `${rr.top - er.top}px`;
+      d.style.width = `${Math.max(0, rr.width)}px`;
+      d.style.height = `${Math.max(0, rr.height)}px`;
+      overlay.appendChild(d);
+    });
+
+    editEl.appendChild(overlay);
+    editEl._selOverlay = overlay;
+  }
+
+  // --- style toggles on selection -------------------------------------------
+  function toggleInlineStyle(editEl, styleKey, styleOnValue, styleOffValue, { treatBold = false } = {}) {
+    const sel = getSelectionSafe();
+    if (!sel || sel.rangeCount === 0) return;
+    if (!selectionIsInside(editEl)) return;
+
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      const span = document.createElement("span");
+      if (treatBold) span.style.fontWeight = styleOnValue;
+      else span.style[styleKey] = styleOnValue;
+      span.appendChild(document.createTextNode("\u200B"));
+      range.insertNode(span);
+
+      const r2 = document.createRange();
+      r2.setStart(span.firstChild, 1);
+      r2.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+      return;
+    }
+
+    const frag = range.extractContents();
+    const span = document.createElement("span");
+    if (treatBold) span.style.fontWeight = styleOnValue;
+    else span.style[styleKey] = styleOnValue;
+    span.appendChild(frag);
+    range.insertNode(span);
+
+    sel.removeAllRanges();
+    const r2 = document.createRange();
+    r2.selectNodeContents(span);
+    sel.addRange(r2);
+  }
+
+function applyColorToSelection(editEl, color) {
+  if (!editEl) return;
+
+  const c = (color === "transparent") ? "transparent" : String(color || "#111827");
+
+  // --- helpers --------------------------------------------------------------
+  function stripInlineColor(root) {
+    if (!root) return;
+    const els = root.querySelectorAll("*");
+    els.forEach((el) => {
+      if (!el || !el.style) return;
+      if (el.style.color) el.style.color = "";
+      // si c'est un span devenu vide d'attributs -> on le laissera au cleanup
+    });
+  }
+  
+
+
+  function cleanupColorSpans(root) {
+    if (!root) return;
+
+    // 1) enlever spans vides (plus de style + pas d'attrs utiles)
+    const spans = Array.from(root.querySelectorAll("span"));
+    spans.forEach((sp) => {
+      if (!sp) return;
+
+      // supprime spans sans contenu
+      if (!sp.textContent || sp.textContent.length === 0) {
+        try { sp.remove(); } catch (_) {}
+        return;
+      }
+
+      const style = (sp.getAttribute("style") || "").trim();
+      const hasOtherAttrs = sp.getAttributeNames().some((n) => n !== "style");
+      if (!style && !hasOtherAttrs) {
+        const frag = document.createDocumentFragment();
+        while (sp.firstChild) frag.appendChild(sp.firstChild);
+        sp.replaceWith(frag);
+      }
+    });
+
+    // 2) fusionner spans adjacents avec la même couleur
+    // (on passe plusieurs fois pour être sûr)
+    for (let pass = 0; pass < 3; pass++) {
+      let changed = false;
+      const all = Array.from(root.querySelectorAll("span"));
+      for (const sp of all) {
+        if (!sp || !sp.parentNode) continue;
+        const next = sp.nextSibling;
+        if (!next || next.nodeType !== 1) continue;
+        if (next.tagName.toLowerCase() !== "span") continue;
+
+        const c1 = sp.style.color ? String(sp.style.color) : "";
+        const c2 = next.style.color ? String(next.style.color) : "";
+        if (!c1 || !c2) continue;
+        if (c1 !== c2) continue;
+
+        // merge
+        while (next.firstChild) sp.appendChild(next.firstChild);
+        next.remove();
+        changed = true;
+      }
+      if (!changed) break;
+    }
+  }
+
+  function getRangeFallback() {
+    let sel = null;
+    try { sel = window.getSelection(); } catch (_) { sel = null; }
+
+    if (sel && sel.rangeCount > 0 && selectionIsInside(editEl)) {
+      return { sel, range: sel.getRangeAt(0) };
+    }
+    if (editEl._savedRange) {
+      return { sel, range: editEl._savedRange.cloneRange() };
+    }
+    return { sel, range: null };
+  }
+
+  // --- get range ------------------------------------------------------------
+  const { sel, range } = getRangeFallback();
+  if (!range) return;
+
+  // --- collapsed caret: insert span color -----------------------------------
+  if (range.collapsed) {
+    const span = document.createElement("span");
+    span.style.color = c;
+    span.appendChild(document.createTextNode("\u200B"));
+    range.insertNode(span);
+
+    try {
+      const r2 = document.createRange();
+      r2.setStart(span.firstChild, 1);
+      r2.collapse(true);
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(r2);
+      }
+      editEl._savedRange = r2.cloneRange();
+    } catch (_) {}
+    cleanupColorSpans(editEl);
+    return;
+  }
+
+  // --- selection: extract -> strip inner colors -> wrap ---------------------
+  const frag = range.extractContents();
+
+  // IMPORTANT: enlever toutes les couleurs qui existent déjà dans le fragment
+  const tmp = document.createElement("div");
+  tmp.appendChild(frag);
+  stripInlineColor(tmp);
+
+  const cleanedFrag = document.createDocumentFragment();
+  while (tmp.firstChild) cleanedFrag.appendChild(tmp.firstChild);
+
+  const wrap = document.createElement("span");
+  wrap.style.color = c;
+  wrap.appendChild(cleanedFrag);
+
+  range.insertNode(wrap);
+
+  // reselection wrap + savedRange
+  try {
+    const r2 = document.createRange();
+    r2.selectNodeContents(wrap);
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(r2);
+    }
+    editEl._savedRange = r2.cloneRange();
+  } catch (_) {}
+
+  cleanupColorSpans(editEl);
+}
+
+
+
+  // --- font helpers ----------------------------------------------------------
+  function stripInlineFontFamily(rootEl) {
+    if (!rootEl) return;
+
+    const nodes = rootEl.querySelectorAll("*");
+    nodes.forEach((el) => {
+      if (!el) return;
+
+      if (el.style && el.style.fontFamily) el.style.fontFamily = "";
+      if (el.dataset && el.dataset.zhFontKey) delete el.dataset.zhFontKey;
+
+      if (el.tagName && el.tagName.toLowerCase() === "span") {
+        const styleAttr = (el.getAttribute("style") || "").trim();
+        const hasData = el.getAttributeNames().some((n) => n.startsWith("data-"));
+        if (!styleAttr && !hasData) {
+          const frag = document.createDocumentFragment();
+          while (el.firstChild) frag.appendChild(el.firstChild);
+          el.replaceWith(frag);
+        }
+      }
+    });
+  }
+
+  function applyFontToAll(editEl, fontKey) {
+    if (!editEl) return;
+    const fam = resolveFontFamilySafe(fontKey || "helv");
+    editEl.style.fontFamily = fam;
+    stripInlineFontFamily(editEl);
+    if (needsSingleLineNormalize(editEl)) normalizeEditorDom(editEl);
+  }
+
+  function applyFontToSelection(editEl, fontKey) {
+    const sel = getSelectionSafe();
+    if (!sel || sel.rangeCount === 0) return;
+
+    if (!selectionIsInside(editEl)) restoreSelectionRange(editEl);
+    if (!selectionIsInside(editEl)) return;
+
+    const fam = resolveFontFamilySafe(fontKey || "helv");
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      const span = document.createElement("span");
+      span.style.fontFamily = fam;
+      span.dataset.zhFontKey = String(fontKey || "helv");
+      span.appendChild(document.createTextNode("\u200B"));
+      range.insertNode(span);
+
+      const r2 = document.createRange();
+      r2.setStart(span.firstChild, 1);
+      r2.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+      return;
+    }
+
+    const frag = range.extractContents();
+    const tmp = document.createElement("div");
+    tmp.appendChild(frag);
+
+    stripInlineFontFamily(tmp);
+
+    const cleaned = document.createDocumentFragment();
+    while (tmp.firstChild) cleaned.appendChild(tmp.firstChild);
+
+    const span = document.createElement("span");
+    span.style.fontFamily = fam;
+    span.dataset.zhFontKey = String(fontKey || "helv");
+    span.appendChild(cleaned);
+
+    range.insertNode(span);
+
+    sel.removeAllRanges();
+    const r2 = document.createRange();
+    r2.selectNodeContents(span);
+    sel.addRange(r2);
+  }
+
+  function stripFontFamilyFromHtmlString(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = String(html || "");
+    stripInlineFontFamily(tmp);
+    return sanitizeRichSingleLine(tmp.innerHTML);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Controller
+  // ---------------------------------------------------------------------------
+  function createTextSimpleController({ overlayEl, draft, pageIndex, fonts, onChange }) {
+    if (!overlayEl) throw new Error("createTextSimpleController: overlayEl manquant");
+    if (!draft) throw new Error("createTextSimpleController: draft manquant");
+    if (typeof pageIndex !== "number") throw new Error("createTextSimpleController: pageIndex manquant");
+
+    const fontList = normalizeFonts(fonts);
+
+    const state = {
+      attached: false,
+      selectedId: null,
+      hoverId: null,
+
+      editingId: null,
+      editSnapshot: null,
+
+      renderRafPending: false,
+      actionRafPending: false,
+      lastMove: null,
+
+      lastClick: { id: null, t: 0 },
+      selectionStamp: 0,
+      action: null, // move|resize|rotate
+      elementsById: new Map(),
+
+      // ✅ NEW toolbar (text_toolbar_tools.js)
+      textToolbar: null,
+
+      sizeLabelEl: null,
+      debugTextarea: null,
+
+      onDocPointerDown: null,
+      onDocKeyDown: null,
+      onWinResize: null,
+      onScroll: null,
+	  
+	  _onSelChange: null,
+    };
+
+    // -------------------------------------------------------------------------
+    // Styles
+    // -------------------------------------------------------------------------
+    function ensureBaseStyles() {
+      if (document.getElementById("tb_textsimple_styles")) return;
+      const st = document.createElement("style");
+      st.id = "tb_textsimple_styles";
+      st.textContent = `
+.anno-object[data-type="text_line"]{position:absolute; box-sizing:border-box; touch-action:none; will-change:left,top,width,height,transform;}
+.anno-object[data-type="text_line"] .tb-hit{position:absolute; inset:0; cursor:move;}
+.anno-object[data-type="text_line"] .tb-hover-outline{position:absolute; inset:-1px; border:1px dashed rgba(37,99,235,.9); pointer-events:none; border-radius:6px; display:none;}
+.anno-object[data-type="text_line"].is-hover .tb-hover-outline{display:block;}
+.anno-object[data-type="text_line"] .tb-sel-outline{position:absolute; inset:-1px; border:2px solid rgba(37,99,235,.95); pointer-events:none; border-radius:8px; display:none;}
+.anno-object[data-type="text_line"].is-selected .tb-sel-outline{display:block;}
+
+.anno-object[data-type="text_line"] .tb-view{
+  position:absolute; inset:0;
+  padding:10px 12px;
+  display:flex; align-items:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  user-select:none;
+}
+
+.anno-object[data-type="text_line"] .tb-edit{
+  position:absolute; inset:0;
+  padding:10px 12px;
+  border:0; outline:none; background:transparent;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  display:none;
+
+  user-select:text;
+  -webkit-user-select:text;
+  cursor:text;
+  touch-action:manipulation;
+  direction:ltr;
+  unicode-bidi:plaintext;
+  writing-mode:horizontal-tb;
+}
+.anno-object[data-type="text_line"].is-editing .tb-view{display:none;}
+.anno-object[data-type="text_line"].is-editing .tb-edit{display:block;}
+.anno-object[data-type="text_line"].is-editing .tb-hit{pointer-events:none;}
+
+.anno-object[data-type="text_line"] .tb-handle{position:absolute; width:10px; height:10px; background:#fff; border:2px solid rgba(37,99,235,.95); border-radius:999px; display:none; box-sizing:border-box;}
+.anno-object[data-type="text_line"].is-selected .tb-handle{display:block;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="nw"]{left:-6px; top:-6px; cursor:nwse-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="n"]{left:50%; top:-6px; transform:translateX(-50%); cursor:ns-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="ne"]{right:-6px; top:-6px; cursor:nesw-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="e"]{right:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="se"]{right:-6px; bottom:-6px; cursor:nwse-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="s"]{left:50%; bottom:-6px; transform:translateX(-50%); cursor:ns-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="sw"]{left:-6px; bottom:-6px; cursor:nesw-resize;}
+.anno-object[data-type="text_line"] .tb-handle[data-h="w"]{left:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize;}
+
+.anno-object[data-type="text_line"] .tb-rotate{
+  position:absolute; left:50%; top:-26px; transform:translateX(-50%);
+  width:14px; height:14px; border-radius:999px; background:#fff;
+  border:2px solid rgba(37,99,235,.95); display:none; cursor:grab;
+}
+.anno-object[data-type="text_line"].is-selected .tb-rotate{display:block;}
+.anno-object[data-type="text_line"] .tb-rotate:after{
+  content:""; position:absolute; left:50%; top:14px; width:2px; height:12px;
+  background:rgba(37,99,235,.95); transform:translateX(-50%); border-radius:2px;
+}
+
+.anno-object[data-type="text_line"] .tb-view-inner{
+  display:inline-block;
+  white-space:nowrap;
+}
+[data-zh-toolbar="1"]{
+  position: fixed !important;
+  z-index: 2147483647 !important;
+}
+
+
+.tb-size-label{
+  position:absolute; z-index:999999;
+  background:rgba(15,23,42,.95); color:#fff;
+  padding:4px 6px; border-radius:8px;
+  font:12px system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 6px 16px rgba(0,0,0,.2);
+  pointer-events:none;
+}`.trim();
+      document.head.appendChild(st);
+    }
+
+    // -------------------------------------------------------------------------
+    // RAF render
+    // -------------------------------------------------------------------------
+    function scheduleRender(reason) {
+      if (state.renderRafPending) return;
+      state.renderRafPending = true;
+      requestAnimationFrame(() => {
+        state.renderRafPending = false;
+        render();
+
+        if (state.debugTextarea) {
+          try { state.debugTextarea.value = JSON.stringify(draft, null, 2); } catch (_) {}
+        }
+        try { onChange && onChange({ reason: reason || "render", draft, pageIndex, selectedId: state.selectedId }); } catch (_) {}
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // Defaults
+    // -------------------------------------------------------------------------
+    function defaultFont() {
+      return {
+        family: (fontList.find((f) => f.isDefault)?.name) || (fontList[0]?.name) || "helv",
+        size: 28,
+        weight: 400,
+        style: "normal",
+        underline: false,
+        letterSpacing: 0,
+        transform: "none",
+      };
+    }
+
+    function baseTextObj() {
+      return {
+        id: uid("txt"),
+        type: "text",
+        mode: "line",
+        x: 80,
+        y: 80,
+        w: 340,
+        h: 90,
+        rotation: 0,
+        opacity: 1,
+        text: "Texte",
+        html: "",
+        color: "#111827",
+        align: "left",
+        font: defaultFont(),
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // Insert / Select / Delete
+    // -------------------------------------------------------------------------
+    function insertTextLine(options) {
+      const p = ensureDraftPage(draft, pageIndex);
+      const o = baseTextObj();
+
+      o.text = (options && options.text) || o.text;
+      o.html = (options && options.html) || (o.text ? escapeHtml(o.text) : "");
+      o.x = (options && options.x) ?? o.x;
+      o.y = (options && options.y) ?? o.y;
+      o.w = (options && options.w) ?? o.w;
+      o.h = (options && options.h) ?? o.h;
+      o.rotation = (options && options.rotation) ?? o.rotation;
+      o.opacity = (options && options.opacity) ?? o.opacity;
+      o.color = (options && options.color) ?? o.color;
+      o.align = (options && options.align) ?? o.align;
+      o.font = { ...o.font, ...(options && options.font ? options.font : {}) };
+
+      p.objects.push(o);
+      select(o.id);
+      scheduleRender("insertTextLine");
+      return o;
+    }
+
+    function select(id) {
+  state.selectedId = id || null;
+  state.selectionStamp = performance.now(); // ✅
+  if (state.editingId && state.editingId !== state.selectedId) exitTextEdit(true);
+  updateToolbar();
+  scheduleRender("select");
+}
+
+
+function clearActive() {
+  if (state.editingId) exitTextEdit(true);
+  state.selectedId = null;
+  state.hoverId = null;
+
+  // ✅ IMPORTANT
+  try { document.dispatchEvent(new Event("zh:toolbar-hide-all")); } catch (_) {}
+
+  updateToolbar();
+  scheduleRender("clearActive");
+}
+   function deleteSelected() {
+  if (!state.selectedId) return;
+  if (state.editingId) return;
+
+  const deletedId = state.selectedId;
+
+  // 1) Clear selection FIRST
+  state.selectedId = null;
+  state.hoverId = null;
+
+  // 2) Hide toolbar IMMEDIATELY
+  if (state.textToolbar) {
+    try { 
+      state.textToolbar.hide(); 
+    } catch (_) {}
+    try { 
+      state.textToolbar.closePopovers(); 
+    } catch (_) {}
+  }
+
+  // 3) Remove from draft
+  removeObject(draft, pageIndex, deletedId);
+
+  // 4) Render
+  scheduleRender("deleteSelected");
+}
+
+ function deleteById(id) {
+  if (!id) return;
+
+  const wasSelected = (state.selectedId === id);
+
+  // Remove from draft
+  removeObject(draft, pageIndex, id);
+
+  // Clear if was selected
+  if (wasSelected) {
+    state.selectedId = null;
+    state.hoverId = null;
+
+    // Hide toolbar
+    if (state.textToolbar) {
+      try { state.textToolbar.hide(); } catch (_) {}
+      try { state.textToolbar.closePopovers(); } catch (_) {}
+    }
+  }
+
+  scheduleRender("deleteById");
+}
+
+
+    // -------------------------------------------------------------------------
+    // Edit text (double click)
+    // -------------------------------------------------------------------------
+    function enterTextEdit(id, { clearIfDefault = false } = {}) {
+      const o = getObject(draft, pageIndex, id);
+      if (!o) return;
+
+      state.editingId = id;
+
+      state.editSnapshot = {
+        id,
+        text: String(o.text ?? ""),
+        html: (o.html == null ? "" : String(o.html)),
+      };
+
+      const isDefault = !o.text || String(o.text).trim() === "Texte";
+      const shouldClear = !!(clearIfDefault && isDefault);
+
+      scheduleRender("enterTextEdit");
+
+      requestAnimationFrame(() => {
+        const el = state.elementsById.get(id);
+        if (!el) return;
+        const edit = el._refs?.edit;
+        if (!edit) return;
+
+        if (shouldClear) edit.innerHTML = "";
+        else edit.innerHTML = (o.html != null && String(o.html).trim() !== "") ? String(o.html) : escapeHtml(o.text ?? "");
+
+        edit.focus({ preventScroll: true });
+		
+		// ✅ keep saved range always fresh while editing
+		if (!state._onSelChange) {
+		  state._onSelChange = () => {
+			if (!state.editingId) return;
+			const el2 = state.elementsById.get(state.editingId);
+			const ed2 = el2?._refs?.edit;
+			if (!ed2) return;
+			if (selectionIsInside(ed2)) saveSelectionRange(ed2);
+		  };
+		  document.addEventListener("selectionchange", state._onSelChange, true);
+		}
+
+
+        try {
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(edit);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          saveSelectionRange(edit);
+        } catch (_) {}
+
+        updateToolbar();
+      });
+    }
+
+    function exitTextEdit(commit = true) {
+      if (!state.editingId) return;
+
+      const id = state.editingId;
+      const o = getObject(draft, pageIndex, id);
+      const el = state.elementsById.get(id);
+      const edit = el?._refs?.edit;
+
+      const sanitizePlain = (s) => {
+		  let out = String(s ?? "");
+		  out = out.replace(/\u200B/g, "");          // ZWSP
+		  out = out.replace(/[\t\r\n]+/g, " ");      // seulement tabs/newlines
+		  out = out.replace(/ {2,}/g, " ");          // seulement multi-espaces "normaux"
+		  return out.trim();
+		};
+
+
+      if (o && edit) {
+        if (commit) {
+          clearSelectionHighlight(edit);
+          normalizeEditorDom(edit);
+          o.html = sanitizeRichSingleLine(edit.innerHTML);
+          o.text = sanitizePlain(edit.textContent);
+          if (!o.text) { o.text = ""; o.html = ""; }
+        } else {
+          clearSelectionHighlight(edit);
+          // revert
+          if (state.editSnapshot && state.editSnapshot.id === id) {
+            o.text = state.editSnapshot.text;
+            o.html = state.editSnapshot.html;
+          }
+        }
+      }
+
+      state.editingId = null;
+      state.editSnapshot = null;
+      updateToolbar();
+      scheduleRender("exitTextEdit");
+    }
+
+    // -------------------------------------------------------------------------
+    // Size label
+    // -------------------------------------------------------------------------
+    function ensureSizeLabel() {
+      if (state.sizeLabelEl) return state.sizeLabelEl;
+      const d = document.createElement("div");
+      d.className = "tb-size-label";
+      d.hidden = true;
+      (overlayEl.parentElement || overlayEl).appendChild(d);
+      state.sizeLabelEl = d;
+      return d;
+    }
+
+    function showSizeLabelFor(id, w, h) {
+      const lab = ensureSizeLabel();
+      const el = state.elementsById.get(id);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const host = lab.parentElement || overlayEl;
+      const hostRect = host.getBoundingClientRect();
+      lab.textContent = `${Math.round(w)} × ${Math.round(h)}`;
+      lab.style.left = `${(r.left - hostRect.left) + 6}px`;
+      lab.style.top = `${(r.top - hostRect.top) - 28}px`;
+      lab.hidden = false;
+    }
+
+    function hideSizeLabel() {
+      if (!state.sizeLabelEl) return;
+      state.sizeLabelEl.hidden = true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Toolbar (TextToolbarTools)
+    // -------------------------------------------------------------------------
+   function ensureTextToolbar() {
+  if (state.textToolbar) return state.textToolbar;
+
+  const TT = getTextToolbarTools();
+  if (!TT || typeof TT.createTextToolbar !== "function") {
+    console.warn("[TS] TextToolbarTools manquant ou invalide", TT);
+    return null;
+  }
+
+  // ✅ host sur body (évite overflow hidden / stacking contexts)
+  const hostEl = document.body;
+
+  let tb = null;
+  try {
+    tb = TT.createTextToolbar({
+      hostEl,
+
+      getContext: () => {
+        if (!state.selectedId) return { isVisible: false };
+
+        const o = getObject(draft, pageIndex, state.selectedId);
+        const el = state.elementsById.get(state.selectedId);
+        if (!o || !el) return { isVisible: false };
+
+        const objRect = el.getBoundingClientRect();
+
+        const f = o.font || defaultFont();
+        const baseFontKey = String(f.family || "helv");
+        const baseSize = clamp(Number(f.size || 28), 4, 90);
+        const baseColor = o.color || "#111827";
+
+        let currentFontKey = baseFontKey;
+        if (state.editingId === o.id) {
+          const ed = el._refs?.edit;
+          const FP = getFontPickerTools();
+          if (ed && FP && typeof FP.getFontKeyFromSavedOrCurrentSelection === "function") {
+            try { currentFontKey = FP.getFontKeyFromSavedOrCurrentSelection(ed, baseFontKey); } catch (_) {}
+          }
+        }
+
+        return {
+          isVisible: true,
+          anchorRect: objRect,
+
+          // ✅ hostRect en viewport (body)
+          hostRect: {
+            left: 0,
+            top: 0,
+            right: window.innerWidth,
+            bottom: window.innerHeight,
+            width: window.innerWidth,
+            height: window.innerHeight,
+          },
+
+          fonts: fontList,
+          fontKey: baseFontKey,
+          currentFontKey,
+          size: baseSize,
+          color: baseColor,
+          align: o.align || "left",
+          bold: (f.weight || 400) >= 700,
+          italic: (f.style || "normal") === "italic",
+          underline: !!f.underline,
+          transform: f.transform || "none",
+        };
+      },
+
+      onBeforeOpenFontPicker: () => {
+        const id = state.selectedId;
+        if (!id) return;
+        const o = getObject(draft, pageIndex, id);
+        const el = state.elementsById.get(id);
+        const edit = el?._refs?.edit;
+        if (state.editingId === o?.id && edit) {
+          saveSelectionRange(edit);
+          highlightSavedSelection(edit);
+        }
+      },
+
+      onBeforeOpenColorPicker: () => {
+        const id = state.selectedId;
+        if (!id) return;
+        const o = getObject(draft, pageIndex, id);
+        const el = state.elementsById.get(id);
+        const edit = el?._refs?.edit;
+        if (state.editingId === o?.id && edit) {
+          saveSelectionRange(edit);
+          highlightSavedSelection(edit);
+        }
+      },
+
+      onAction: (action) => handleToolbarAction(action),
+    });
+  } catch (err) {
+    console.error("[TS] TT.createTextToolbar() a planté:", err);
+    return null;
+  }
+
+  if (!tb) {
+    console.warn("[TS] createTextToolbar a renvoyé null/undefined");
+    return null;
+  }
+
+  // ✅ Force montage DOM si l’impl ne le fait pas
+  if (tb.el) {
+    tb.el.setAttribute("data-zh-toolbar", "1");
+    if (!tb.el.parentNode) hostEl.appendChild(tb.el);
+  } else {
+    console.warn("[TS] toolbar créée mais tb.el est absent (impl lazy?)", tb);
+  }
+
+  state.textToolbar = tb;
+  console.log("[TS] toolbar OK", tb);
+  
+
+
+  // ✅ premier sync
+  try { tb.updateFromContext && tb.updateFromContext(); } catch (e) {}
+
+  return state.textToolbar;
+}
+
+
+function updateToolbar() {
+  const tb = ensureTextToolbar();
+  if (!tb) return;
+  if (window.__ZH_TT_FORCE_HIDDEN__) {
+  try { tb.hide && tb.hide(); } catch (_) {}
+  return;
+}
+
+  // pas sélectionné => on cache
+  if (!state.selectedId) {
+    try { tb.hide && tb.hide(); } catch (_) {}
+    try { tb.closePopovers && tb.closePopovers(); } catch (_) {}
+    return;
+  }
+
+  const o = getObject(draft, pageIndex, state.selectedId);
+  const el = state.elementsById.get(state.selectedId);
+  if (!o || !el) {
+    try { tb.hide && tb.hide(); } catch (_) {}
+    return;
+  }
+
+  // ✅ calc rect
+  const anchorRect = el.getBoundingClientRect();
+  const hostRect = {
+    left: 0, top: 0,
+    right: window.innerWidth, bottom: window.innerHeight,
+    width: window.innerWidth, height: window.innerHeight,
+  };
+
+  const f = o.font || defaultFont();
+  const baseFontKey = String(f.family || "helv");
+  const baseSize = clamp(Number(f.size || 28), 4, 90);
+  const baseColor = o.color || "#111827";
+
+  // ✅ show + values + position (sans dépendre de updateFromContext)
+  try { tb.show && tb.show(); } catch (_) {}
+
+  try {
+    tb.setValues && tb.setValues({
+      fonts: fontList,
+      fontKey: baseFontKey,
+      currentFontKey: baseFontKey,
+      size: baseSize,
+      color: baseColor,
+      align: o.align || "left",
+      bold: (f.weight || 400) >= 700,
+      italic: (f.style || "normal") === "italic",
+      underline: !!f.underline,
+      transform: f.transform || "none",
+    });
+  } catch (err) {
+    console.warn("[TS] tb.setValues failed", err);
+  }
+
+  try {
+    tb.positionUnderRect && tb.positionUnderRect(anchorRect, hostRect);
+  } catch (err) {
+    console.warn("[TS] tb.positionUnderRect failed", err);
+  }
+}
+
+
+
+    function handleToolbarAction(action) {
+		console.log("%c[TS] handleToolbarAction", "color:#16a34a;font-weight:900;", action, {
+	  selectedId: state.selectedId,
+	  editingId: state.editingId
+	});
+		
+		
+      const id = state.selectedId;
+      if (!id) return;
+
+      const o = getObject(draft, pageIndex, id);
+      const el = state.elementsById.get(id);
+      const edit = el?._refs?.edit;
+
+      if (!o) return;
+      o.font = o.font || defaultFont();
+
+      const FP = getFontPickerTools();
+
+      switch (action.type) {
+        case "font": {
+          const fontKey = action.value;
+
+          if (state.editingId === o.id && edit) {
+            // sélection partielle si possible, sinon global (tout le texte)
+            restoreSelectionRange(edit);
+            const sel = getSelectionSafe();
+            const hasRange = !!(sel && sel.rangeCount > 0 && selectionIsInside(edit));
+            const range = hasRange ? sel.getRangeAt(0) : null;
+            const hasSelection = !!(range && !range.collapsed);
+
+            if (hasSelection) {
+              applyFontToSelection(edit, fontKey);
+            } else {
+              applyFontToAll(edit, fontKey);
+            }
+
+            clearSelectionHighlight(edit);
+
+            if (needsSingleLineNormalize(edit)) normalizeEditorDom(edit);
+            o.html = sanitizeRichSingleLine(edit.innerHTML);
+            o.text = extractPlainPreserveSpaces(edit);
+
+            o.font.family = fontKey;
+			o.font = o.font || {};
+			o.font.family = fontKey;
+
+		
+
+			
+			
+          } else {
+            // police globale du bloc
+            o.font.family = fontKey;
+            // si du html existe, virer toutes les polices inline sinon ça “gagne”
+            if (o.html != null && String(o.html).trim() !== "") {
+              o.html = stripFontFamilyFromHtmlString(o.html);
+            }
+          }
+
+          scheduleRender("tb_font");
+          updateToolbar();
+          return;
+        }
+
+        case "size": {
+          o.font.size = clamp(Number(action.value || 28), 4, 90);
+          scheduleRender("tb_size");
+          updateToolbar();
+          return;
+        }
+
+case "color": {
+  const hex = action.value;
+
+  console.log("%c[TS] COLOR action", "color:#16a34a;font-weight:900;", {
+    hex,
+    selectedId: state.selectedId,
+    editingId: state.editingId,
+    isEditing: state.editingId === o.id,
+    hasEdit: !!edit,
+    savedRange: !!(edit && edit._savedRange),
+  });
+
+  if (state.editingId === o.id && edit) {
+    try { edit.focus({ preventScroll: true }); } catch (_) { try { edit.focus(); } catch(_){} }
+
+    const restored = restoreSelectionRange(edit);
+    console.log("%c[TS] restoreSelectionRange =>", "color:#16a34a;font-weight:900;", restored);
+
+    console.log("[TS] beforeColor", { html: edit.innerHTML, saved: !!edit._savedRange });
+    dbgChars("BEFORE textContent", edit.textContent);
+
+    applyColorToSelection(edit, hex);
+
+    dbgChars("AFTER textContent", edit.textContent);
+    console.log("[TS][DBG] AFTER innerHTML=", edit.innerHTML);
+
+    saveSelectionRange(edit);
+    clearSelectionHighlight(edit);
+    highlightSavedSelection(edit);
+
+    if (needsSingleLineNormalize(edit)) normalizeEditorDom(edit);
+
+    o.html = sanitizeRichSingleLine(edit.innerHTML);
+    o.text = extractPlainPreserveSpaces(edit);
+  } else {
+    // ✅ hors édition : couleur “base” du bloc
+    o.color = hex;
+  }
+
+  scheduleRender("tb_color");
+  updateToolbar();
+  return;
+}
+
+
+
+
+        case "align": {
+          o.align = action.value === "center" ? "center" : (action.value === "right" ? "right" : "left");
+          scheduleRender("tb_align");
+          updateToolbar();
+          return;
+        }
+
+        case "bold": {
+          if (state.editingId === o.id && edit) {
+            saveSelectionRange(edit);
+            restoreSelectionRange(edit);
+            toggleInlineStyle(edit, "fontWeight", "700", "400", { treatBold: true });
+            if (needsSingleLineNormalize(edit)) normalizeEditorDom(edit);
+            o.html = sanitizeRichSingleLine(edit.innerHTML);
+            o.text = extractPlainPreserveSpaces(edit);
+          } else {
+            o.font.weight = (o.font.weight || 400) >= 700 ? 400 : 700;
+          }
+          scheduleRender("tb_bold");
+          updateToolbar();
+          return;
+        }
+
+        case "italic": {
+          if (state.editingId === o.id && edit) {
+            saveSelectionRange(edit);
+            restoreSelectionRange(edit);
+            toggleInlineStyle(edit, "fontStyle", "italic", "normal");
+            if (needsSingleLineNormalize(edit)) normalizeEditorDom(edit);
+            o.html = sanitizeRichSingleLine(edit.innerHTML);
+            o.text = extractPlainPreserveSpaces(edit);
+          } else {
+            o.font.style = (o.font.style || "normal") === "italic" ? "normal" : "italic";
+          }
+          scheduleRender("tb_italic");
+          updateToolbar();
+          return;
+        }
+
+        case "underline": {
+          if (state.editingId === o.id && edit) {
+            saveSelectionRange(edit);
+            restoreSelectionRange(edit);
+            toggleInlineStyle(edit, "textDecoration", "underline", "none");
+            if (needsSingleLineNormalize(edit)) normalizeEditorDom(edit);
+            o.html = sanitizeRichSingleLine(edit.innerHTML);
+            o.text = extractPlainPreserveSpaces(edit);
+          } else {
+            o.font.underline = !o.font.underline;
+          }
+          scheduleRender("tb_underline");
+          updateToolbar();
+          return;
+        }
+
+        case "transform": {
+          o.font.transform = String(action.value || "none");
+          scheduleRender("tb_transform");
+          updateToolbar();
+          return;
+        }
+
+        default:
+          return;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // DOM creation / render
+    // -------------------------------------------------------------------------
+    function createObjectEl(o) {
+      const root = document.createElement("div");
+      root.className = "anno-object";
+      root.dataset.objid = o.id;
+      root.dataset.pageindex = String(pageIndex);
+      root.dataset.type = "text_line";
+	  root.dataset.kind = "text_simple";
+      root.style.transformOrigin = "center center";
+      root.style.opacity = String(o.opacity ?? 1);
+
+      const hit = document.createElement("div");
+      hit.className = "tb-hit";
+
+      const hover = document.createElement("div");
+      hover.className = "tb-hover-outline";
+
+      const sel = document.createElement("div");
+      sel.className = "tb-sel-outline";
+
+      const view = document.createElement("div");
+      view.className = "tb-view";
+	  
+	  const viewInner = document.createElement("div");
+		viewInner.className = "tb-view-inner";
+		view.appendChild(viewInner);
+
+      const edit = document.createElement("div");
+      edit.className = "tb-edit";
+      edit.contentEditable = "true";
+      edit.spellcheck = false;
+      edit.setAttribute("data-edit", "1");
+      edit.setAttribute("dir", "ltr");
+
+      edit.addEventListener("mouseup", () => { saveSelectionRange(edit); updateToolbar(); }, true);
+      edit.addEventListener("keyup", () => { saveSelectionRange(edit); updateToolbar(); }, true);
+
+      const handles = ["nw","n","ne","e","se","s","sw","w"].map((h) => {
+        const d = document.createElement("div");
+        d.className = "tb-handle";
+        d.dataset.h = h;
+        return d;
+      });
+
+      const rot = document.createElement("div");
+      rot.className = "tb-rotate";
+      rot.dataset.h = "rot";
+
+      root.appendChild(view);
+      root.appendChild(edit);
+      root.appendChild(hit);
+      root.appendChild(hover);
+      root.appendChild(sel);
+      handles.forEach((h) => root.appendChild(h));
+      root.appendChild(rot);
+
+      root.addEventListener("pointerenter", () => {
+        state.hoverId = o.id;
+        scheduleRender("hover");
+      });
+      root.addEventListener("pointerleave", () => {
+        if (state.hoverId === o.id) state.hoverId = null;
+        scheduleRender("hoverleave");
+      });
+
+      root.addEventListener("pointerdown", (e) => onObjectPointerDown(e, o.id), { capture: true });
+
+      edit.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+      }, { capture: true });
+
+      edit.addEventListener("input", () => {
+        if (needsSingleLineNormalize(edit)) {
+          normalizeEditorDom(edit);
+        }
+        const oo = getObject(draft, pageIndex, o.id);
+        if (oo && state.editingId === o.id) {
+          oo.html = sanitizeRichSingleLine(edit.innerHTML);
+          oo.text = extractPlainPreserveSpaces(edit);
+          scheduleRender("editInput");
+          updateToolbar();
+        }
+      });
+
+      edit.addEventListener("paste", (e) => {
+        stop(e);
+        const txt = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
+        const sel2 = getSelectionSafe();
+        if (!sel2 || sel2.rangeCount === 0) return;
+        const r = sel2.getRangeAt(0);
+        r.deleteContents();
+        r.insertNode(document.createTextNode(txt.replace(/\r?\n/g, " ")));
+        r.collapse(false);
+        sel2.removeAllRanges();
+        sel2.addRange(r);
+        normalizeEditorDom(edit);
+        saveSelectionRange(edit);
+        updateToolbar();
+      });
+
+      edit.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { stop(e); exitTextEdit(true); return; }
+        if (e.key === "Escape") { stop(e); exitTextEdit(false); return; }
+      });
+
+      root._refs = { view, viewInner, edit };
+
+      return root;
+    }
+
+ function applyFontStyles(elView, elEdit, o) {
+  const f = o.font || defaultFont();
+
+  // clé logique persistée
+  const fontKey = String((o.font && o.font.family) ? o.font.family : (f.family || "helv")).trim() || "helv";
+
+  // CSS family finale
+  const fam = resolveFontFamilySafe(fontKey);
+
+  const color = (o.color || "#111827") === "transparent" ? "transparent" : (o.color || "#111827");
+
+  const t = String(f.transform || "none");
+  const cssTransform =
+    t === "upper" ? "uppercase" :
+    t === "lower" ? "lowercase" :
+    t === "capitalize" ? "capitalize" :
+    "none";
+
+  const base = {
+    fontFamily: fam,
+    fontSize: `${f.size || 28}px`,
+    fontWeight: String(f.weight || 400),
+    fontStyle: f.style || "normal",
+    textDecoration: f.underline ? "underline" : "none",
+    letterSpacing: `${f.letterSpacing || 0}px`,
+    color,
+    textTransform: cssTransform,
+  };
+
+  Object.assign(elView.style, base);
+  Object.assign(elEdit.style, base);
+
+  const inner = elView.querySelector?.(".tb-view-inner");
+  if (inner) Object.assign(inner.style, base);
+
+  const a = o.align || "left";
+  elView.style.justifyContent = a === "center" ? "center" : (a === "right" ? "flex-end" : "flex-start");
+  elEdit.style.textAlign = a;
+  elEdit.style.opacity = "1";
+}
+
+
+
+    function renderObject(o) {
+      let el = state.elementsById.get(o.id);
+      if (!el) {
+        el = createObjectEl(o);
+        state.elementsById.set(o.id, el);
+        overlayEl.appendChild(el);
+      }
+
+      const isSel = state.selectedId === o.id;
+      const isEdit = state.editingId === o.id;
+
+      el.classList.toggle("is-hover", state.hoverId === o.id && !isSel);
+      el.classList.toggle("is-selected", isSel);
+      el.classList.toggle("is-editing", isEdit);
+
+      el.style.opacity = String(o.opacity ?? 1);
+      setElRect(el, o.x, o.y, o.w, o.h);
+      el.style.transform = `rotate(${o.rotation || 0}deg)`;
+
+		const { view, viewInner, edit } = el._refs;
+		applyFontStyles(view, edit, o);
+
+		const hasRich = o.html != null && String(o.html).trim() !== "";
+		if (hasRich) viewInner.innerHTML = String(o.html);
+		else viewInner.textContent = applyTextTransform(o.text || "", o.font?.transform || "none");
+        console.log("[TS][DBG] VIEW innerHTML=", viewInner.innerHTML);
+		console.log("[TS][DBG] VIEW textContent=", viewInner.textContent);
+
+      const src = hasRich
+        ? String(o.html)
+        : escapeHtml(applyTextTransform(o.text || "", o.font?.transform || "none"));
+
+      if (!isEdit) edit.innerHTML = src;
+      else if (document.activeElement !== edit) edit.innerHTML = src;
+    }
+
+    function render() {
+      ensureBaseStyles();
+      ensureTextToolbar();
+
+      const p = ensureDraftPage(draft, pageIndex);
+      const objs = (p.objects || []).filter((o) => o && o.type === "text" && o.mode === "line");
+
+      for (const [id, el] of state.elementsById.entries()) {
+        const still = objs.some((o) => o.id === id);
+        if (!still) {
+          try { el.remove(); } catch (_) {}
+          state.elementsById.delete(id);
+        }
+      }
+
+      for (const o of objs) renderObject(o);
+
+      updateToolbar();
+    }
+
+    // -------------------------------------------------------------------------
+    // Pointer interactions: move / resize / rotate
+    // -------------------------------------------------------------------------
+function isInAnyPopover(target) {
+  if (!target || !target.closest) return false;
+
+  // ✅ popovers "standards"
+  if (target.closest(".zh-font-pop")) return true;
+  if (target.closest(".zh-cp-pop")) return true;
+
+  // compat / legacy
+  if (target.closest(".zh-color-pop")) return true;
+  if (target.closest(".tt-color-pop")) return true;
+  if (target.closest(".color-pop")) return true;
+  if (target.closest("[data-color-picker-pop]")) return true;
+
+  // ✅ NOUVEAU : attr universel (on va le poser sur les popovers)
+  if (target.closest('[data-zh-popover="1"]')) return true;
+
+  return false;
+}
+
+
+
+    function onObjectPointerDown(e, id) {
+		
+		 e.__zhHandledBy = "text_simple";
+  try { e.__zhKeepToolbar = true; } catch(_) {}
+
+ 
+      const o = getObject(draft, pageIndex, id);
+      if (!o) return;
+      if (isInAnyPopover(e.target)) return;
+
+      if (state.editingId === id || isEditableTarget(e.target)) return;
+
+      {
+        const now = performance.now();
+        const dt = now - (state.lastClick.t || 0);
+        const same = state.lastClick.id === id;
+        const isDbl = (e.detail && e.detail >= 2) || (same && dt < 350);
+
+        const isHandle = (e.target && e.target.closest && e.target.closest(".tb-handle, .tb-rotate"));
+
+        if (!isHandle && isDbl) {
+          e.stopPropagation();
+          e.preventDefault();
+          state.lastClick = { id: null, t: 0 };
+          if (state.selectedId !== id) state.selectedId = id;
+          enterTextEdit(id, { clearIfDefault: false });
+          return;
+        }
+        state.lastClick = { id, t: now };
+      }
+
+      if (state.selectedId !== id) {
+        state.selectedId = id;
+        updateToolbar();
+        scheduleRender("selectFromPointer");
+      }
+
+      const h = e.target && e.target.closest ? e.target.closest(".tb-handle, .tb-rotate") : null;
+      if (h) {
+        const hh = h.dataset.h;
+        stop(e);
+        if (hh === "rot") return beginRotate(e, id);
+        return beginResize(e, id, hh);
+      }
+
+      stop(e);
+      beginMove(e, id);
+    }
+
+    function beginMove(e, id) {
+      const o = getObject(draft, pageIndex, id);
+      if (!o) return;
+      state.selectionStamp = performance.now();
+      overlayEl.setPointerCapture(e.pointerId);
+
+      state.action = {
+        type: "move",
+        id,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        ox: o.x,
+        oy: o.y,
+      };
+
+      const onMove = (ev) => {
+        if (!state.action || state.action.type !== "move") return;
+        state.lastMove = ev;
+        if (state.actionRafPending) return;
+        state.actionRafPending = true;
+
+        requestAnimationFrame(() => {
+          state.actionRafPending = false;
+          const a = state.action;
+          if (!a || a.type !== "move") return;
+          const obj = getObject(draft, pageIndex, a.id);
+          if (!obj) return;
+
+          const dx = state.lastMove.clientX - a.startX;
+          const dy = state.lastMove.clientY - a.startY;
+
+          obj.x = a.ox + dx;
+          obj.y = a.oy + dy;
+
+          const el = state.elementsById.get(a.id);
+          if (el) setElRect(el, obj.x, obj.y, obj.w, obj.h);
+
+          updateToolbar();
+          scheduleRender("move");
+        });
+      };
+
+      const onUp = () => {
+        try { overlayEl.releasePointerCapture(e.pointerId); } catch (_) {}
+        state.action = null;
+        hideSizeLabel();
+        scheduleRender("moveEnd");
+        cleanup();
+      };
+
+      const cleanup = () => {
+        overlayEl.removeEventListener("pointermove", onMove);
+        overlayEl.removeEventListener("pointerup", onUp);
+        overlayEl.removeEventListener("pointercancel", onUp);
+      };
+
+      overlayEl.addEventListener("pointermove", onMove);
+      overlayEl.addEventListener("pointerup", onUp);
+      overlayEl.addEventListener("pointercancel", onUp);
+    }
+
+    function beginResize(e, id, handle) {
+      const o = getObject(draft, pageIndex, id);
+      if (!o) return;
+
+      overlayEl.setPointerCapture(e.pointerId);
+
+      const init = { x: o.x, y: o.y, w: o.w, h: o.h, fs: o.font?.size || 28 };
+      const start = { x: e.clientX, y: e.clientY };
+
+      state.action = { type: "resize", id, pointerId: e.pointerId, handle, init, start };
+
+      const onMove = (ev) => {
+        if (!state.action || state.action.type !== "resize") return;
+        state.lastMove = ev;
+        if (state.actionRafPending) return;
+        state.actionRafPending = true;
+
+        requestAnimationFrame(() => {
+          state.actionRafPending = false;
+          const a = state.action;
+          if (!a || a.type !== "resize") return;
+          const obj = getObject(draft, pageIndex, a.id);
+          if (!obj) return;
+
+          const dx = state.lastMove.clientX - a.start.x;
+          const dy = state.lastMove.clientY - a.start.y;
+
+          let x = a.init.x, y = a.init.y, w = a.init.w, h = a.init.h;
+
+          const minW = 80;
+          const minH = 44;
+
+          if (handle.includes("e")) w = a.init.w + dx;
+          if (handle.includes("s")) h = a.init.h + dy;
+          if (handle.includes("w")) { w = a.init.w - dx; x = a.init.x + dx; }
+          if (handle.includes("n")) { h = a.init.h - dy; y = a.init.y + dy; }
+
+          w = Math.max(minW, w);
+          h = Math.max(minH, h);
+
+          obj.x = x; obj.y = y; obj.w = w; obj.h = h;
+
+          if (state.lastMove.shiftKey) {
+            const sx = w / a.init.w;
+            const sy = h / a.init.h;
+            const s = Math.min(sx, sy);
+            obj.font = obj.font || defaultFont();
+            obj.font.size = clamp(Math.round(a.init.fs * s), 4, 90);
+          }
+
+          const el = state.elementsById.get(a.id);
+          if (el) setElRect(el, obj.x, obj.y, obj.w, obj.h);
+
+          showSizeLabelFor(a.id, obj.w, obj.h);
+          updateToolbar();
+          scheduleRender("resize");
+        });
+      };
+
+      const onUp = () => {
+        try { overlayEl.releasePointerCapture(e.pointerId); } catch (_) {}
+        state.action = null;
+        hideSizeLabel();
+        scheduleRender("resizeEnd");
+        cleanup();
+      };
+
+      const cleanup = () => {
+        overlayEl.removeEventListener("pointermove", onMove);
+        overlayEl.removeEventListener("pointerup", onUp);
+        overlayEl.removeEventListener("pointercancel", onUp);
+      };
+
+      overlayEl.addEventListener("pointermove", onMove);
+      overlayEl.addEventListener("pointerup", onUp);
+      overlayEl.addEventListener("pointercancel", onUp);
+    }
+
+    function beginRotate(e, id) {
+      const o = getObject(draft, pageIndex, id);
+      if (!o) return;
+
+      overlayEl.setPointerCapture(e.pointerId);
+
+      const r = overlayRect(overlayEl);
+      const { cx, cy } = centerOfRect(o.x, o.y, o.w, o.h);
+      const startAngle = Math.atan2(e.clientY - r.top - cy, e.clientX - r.left - cx);
+      const initRot = o.rotation || 0;
+
+      state.action = { type: "rotate", id, pointerId: e.pointerId, cx, cy, startAngle, initRot };
+
+      const onMove = (ev) => {
+        if (!state.action || state.action.type !== "rotate") return;
+        state.lastMove = ev;
+        if (state.actionRafPending) return;
+        state.actionRafPending = true;
+
+        requestAnimationFrame(() => {
+          state.actionRafPending = false;
+          const a = state.action;
+          if (!a || a.type !== "rotate") return;
+          const obj = getObject(draft, pageIndex, a.id);
+          if (!obj) return;
+
+          const pos = clientToOverlayXY(overlayEl, state.lastMove.clientX, state.lastMove.clientY);
+          const ang = Math.atan2(pos.y - a.cy, pos.x - a.cx);
+          let rot = a.initRot + deg(ang - a.startAngle);
+
+          if (state.lastMove.shiftKey) rot = Math.round(rot / 15) * 15;
+          obj.rotation = rot;
+
+          const el = state.elementsById.get(a.id);
+          if (el) el.style.transform = `rotate(${obj.rotation || 0}deg)`;
+
+          updateToolbar();
+          scheduleRender("rotate");
+        });
+      };
+
+      const onUp = () => {
+        try { overlayEl.releasePointerCapture(e.pointerId); } catch (_) {}
+        state.action = null;
+        scheduleRender("rotateEnd");
+        cleanup();
+      };
+
+      const cleanup = () => {
+        overlayEl.removeEventListener("pointermove", onMove);
+        overlayEl.removeEventListener("pointerup", onUp);
+        overlayEl.removeEventListener("pointercancel", onUp);
+      };
+
+      overlayEl.addEventListener("pointermove", onMove);
+      overlayEl.addEventListener("pointerup", onUp);
+      overlayEl.addEventListener("pointercancel", onUp);
+    }
+
+    // -------------------------------------------------------------------------
+    // Global handlers: click outside => exit edit + deselect
+    // -------------------------------------------------------------------------
+    function onDocumentPointerDown(e) {
+		
+		
+  const t = e.target;
+
+  // ✅ ignore clicks inside our own popovers / toolbar
+  if (isInAnyPopover(t)) return;
+  if (state.textToolbar?.el && state.textToolbar.el.contains(t)) return;
+
+  // ✅ 1) Si clic dans un paragraphe (ou un autre outil texte) => on force TextSimple à se couper
+  const insideParagraph = !!(t && t.closest && t.closest('[data-type="text_paragraph"]'));
+  if (insideParagraph) {
+    if (state.editingId) exitTextEdit(true);
+
+    if (state.textToolbar) {
+      try { state.textToolbar.closePopovers && state.textToolbar.closePopovers(); } catch (_) {}
+    }
+
+    state.selectedId = null;
+    state.hoverId = null;
+    updateToolbar();
+    scheduleRender("deselect_on_paragraph");
+    return;
+  }
+
+  // ✅ 2) Détecter UNIQUEMENT nos objets TextSimple (tu poses déjà data-kind="text_simple")
+  const insideTextSimple = !!(t && t.closest && t.closest('.anno-object[data-kind="text_simple"]'));
+
+  // ✅ 3) Si on était en édition et qu'on clique hors du champ d'édition => commit
+  if (state.editingId) {
+    const editingEl = state.elementsById.get(state.editingId);
+    const editingEdit = editingEl ? editingEl._refs?.edit : null;
+
+    const clickInsideEditable = !!(
+      editingEdit &&
+      (t === editingEdit || (t.closest && t.closest(".tb-edit") === editingEdit))
+    );
+
+    if (!clickInsideEditable) exitTextEdit(true);
+  }
+
+  // ✅ clic dans un TextSimple => ne pas deselect
+  if (insideTextSimple) return;
+
+  // ✅ sinon: click outside => close popovers + deselect
+  if (state.textToolbar) {
+    try { state.textToolbar.closePopovers && state.textToolbar.closePopovers(); } catch (_) {}
+  }
+
+  state.selectedId = null;
+  state.hoverId = null;
+  updateToolbar();
+  scheduleRender("deselect");
+}
+
+
+    function onDocumentKeyDown(e) {
+      if (isEditableTarget(document.activeElement)) return;
+
+      if (e.key === "Escape") {
+        if (state.editingId) { exitTextEdit(false); return; }
+        state.selectedId = null;
+        updateToolbar();
+        scheduleRender("escape");
+        return;
+      }
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (state.selectedId) {
+          stop(e);
+          deleteSelected();
+        }
+      }
+    }
+
+    function onWindowResize() { updateToolbar(); }
+    function onScrollAny() { updateToolbar(); }
+
+    // -------------------------------------------------------------------------
+    // Attach / Detach
+    // -------------------------------------------------------------------------
+    function attach() {
+		  console.log("[TS] attach()");
+      if (state.attached) return;
+      state.attached = true;
+
+      ensureBaseStyles();
+      ensureTextToolbar();
+
+      state.onDocPointerDown = onDocumentPointerDown;
+      state.onDocKeyDown = onDocumentKeyDown;
+      state.onWinResize = onWindowResize;
+      state.onScroll = onScrollAny;
+
+      document.addEventListener("pointerdown", state.onDocPointerDown, { capture: true });
+      document.addEventListener("keydown", state.onDocKeyDown, { capture: true });
+      window.addEventListener("resize", state.onWinResize);
+      window.addEventListener("scroll", state.onScroll, true);
+
+      scheduleRender("attach");
+    }
+
+    function detach() {
+      if (!state.attached) return;
+      state.attached = false;
+
+      document.removeEventListener("pointerdown", state.onDocPointerDown, { capture: true });
+      document.removeEventListener("keydown", state.onDocKeyDown, { capture: true });
+      window.removeEventListener("resize", state.onWinResize);
+      window.removeEventListener("scroll", state.onScroll, true);
+
+      if (state.textToolbar) {
+        try { state.textToolbar.destroy && state.textToolbar.destroy(); } catch (_) {}
+        state.textToolbar = null;
+      }
+	  
+	  if (state._onSelChange) {
+		  document.removeEventListener("selectionchange", state._onSelChange, true);
+		  state._onSelChange = null;
+		}
+
+      if (state.sizeLabelEl) {
+        try { state.sizeLabelEl.remove(); } catch (_) {}
+        state.sizeLabelEl = null;
+      }
+
+      for (const [, el] of state.elementsById.entries()) {
+        try { el.remove(); } catch (_) {}
+      }
+      state.elementsById.clear();
+
+      state.selectedId = null;
+      state.hoverId = null;
+      state.editingId = null;
+      state.editSnapshot = null;
+      state.action = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Sandbox helper
+    // -------------------------------------------------------------------------
+    function setupSandbox({ sidebarEl, debugTextarea } = {}) {
+      state.debugTextarea = debugTextarea || null;
+      if (!sidebarEl) return;
+
+      const btn = (label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.style.width = "100%";
+        b.style.padding = "10px 12px";
+        b.style.borderRadius = "12px";
+        b.style.border = "1px solid rgba(0,0,0,.12)";
+        b.style.background = "#fff";
+        b.style.cursor = "pointer";
+        b.style.fontFamily = "system-ui,-apple-system,Segoe UI,Roboto,Arial";
+        b.style.fontWeight = "800";
+        b.style.marginBottom = "10px";
+        b.addEventListener("mouseenter", () => b.style.background = "#f8fafc");
+        b.addEventListener("mouseleave", () => b.style.background = "#fff");
+        return b;
+      };
+
+      const b1 = btn("Ajouter texte");
+      sidebarEl.appendChild(b1);
+
+      b1.addEventListener("click", () => {
+        const o = insertTextLine({ text: "Texte" });
+        requestAnimationFrame(() => enterTextEdit(o.id, { clearIfDefault: true }));
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
+    return {
+      attach,
+      detach,
+      insertTextLine,
+      select,
+	   clearActive,
+      delete: deleteById,
+      render,
+      setupSandbox,
+    };
+  }
+
+  global.createTextSimpleController = createTextSimpleController;
+  console.log("[TS] createTextSimpleController exported:", typeof window.createTextSimpleController);
+})(window);

@@ -1,0 +1,86 @@
+{# app/templates/agent/marketing_document_view.html #}
+{% extends "_layouts/minimal.html" %}
+
+{% block title %}Lecture document{% endblock %}
+{% block breadcrumb %}Documents labo / Lecture{% endblock %}
+
+{% block content %}
+  <h1 style="margin-bottom:10px;">Lecture document</h1>
+
+  <div class="card" style="margin-top:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <a href="/agent/marketing-documents" class="btn">← Retour</a>
+        <span id="agentDocViewStatus" style="color:#6b7280;">Chargement…</span>
+      </div>
+
+      <div style="color:#6b7280; font-size:13px; max-width: 780px;">
+        Les prix/ruptures sont rendus <strong>dynamiquement</strong> (API produits) et le téléchargement génère un PDF
+        <strong>vectoriel</strong> (texte sélectionnable) avec <strong>typos embarquées</strong>.
+        <span id="agentDocViewMode"
+              style="margin-left:8px; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:600; display:inline-block;">
+          —
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button id="agentDocReloadBtn" class="btn" type="button">↻ Recharger</button>
+        <a id="agentDocOpenPdf" class="btn" href="#" target="_blank" rel="noopener">Ouvrir le PDF</a>
+
+        {# ✅ Nouveau: téléchargement côté serveur (vectoriel + typos embarquées) #}
+        <a id="agentDocDownloadRenderedBtn"
+           class="btn btn-primary"
+           href="#"
+           rel="noopener">
+          Télécharger PDF final (typos)
+        </a>
+
+        {# (Optionnel) tu peux garder le bouton client-side si tu veux, sinon supprime-le.
+           Ici on le garde mais en "secondary" pour debug / secours. #}
+        <a id="agentDocDownloadBtn"
+           class="btn"
+           href="#"
+           rel="noopener"
+           title="Fallback navigateur (aplatit via canvas/jsPDF — les typos peuvent être approximatives)">
+          Télécharger PDF (fallback)
+        </a>
+      </div>
+
+      <div style="color:#6b7280; font-size:13px;">
+        <span id="agentDocMeta" style="display:inline-block;">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div id="pdfViewerRoot"
+         style="position:relative; width:100%; overflow:auto; background:#f3f4f6; border-radius:12px; padding:12px;">
+      <!-- pages PDF injectées ici -->
+    </div>
+  </div>
+
+  <script>
+    window.__ZENHUB_EDITOR_CTX__ = { role: "AGENT" };
+    window.__AGENT_DOC_ID__ = {{ doc_id }};
+  </script>
+
+  <!-- ✅ PDF.js local (même source que le LABO) -->
+<script src="/static/vendor/pdfjs/pdf.min.js"></script>
+<script>
+  // pdf.min.js expose window.pdfjsLib
+  if (!window.pdfjsLib) {
+    console.error("pdfjsLib indisponible (pdf.min.js non chargé).");
+  } else {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/static/vendor/pdfjs/pdf.worker.min.js";
+  }
+</script>
+
+  {# jsPDF uniquement nécessaire si tu gardes le fallback "Télécharger PDF (fallback)" #}
+  <script src="/static/vendor/jspdf/jspdf.umd.min.js"></script>
+
+  <script src="/static/agent/marketing_document_view.js?v=3"></script>
+{% endblock %}

@@ -1,0 +1,36 @@
+:root{
+  --bg:#f3f4f6; --card:#fff; --border:#e5e7eb; --text:#111827; --muted:#6b7280;
+  --sidebar:#111827; --sidebar-hover:#1f2937; --sidebar-text:#e5e7eb;
+}
+*{box-sizing:border-box} body{margin:0; color:var(--text); background:var(--bg); font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+
+.app-shell{display:flex; min-height:100vh}
+.sidebar{
+  width:260px; background:var(--sidebar); color:#fff; display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh; z-index:10;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--sidebar-hover)}
+.logo{width:24px;height:24px}
+.hamburger{border:0;background:transparent;color:#9ca3af;font-size:18px;cursor:pointer}
+.app-name{color:var(--sidebar-text); font-weight:600}
+.menu{display:flex; flex-direction:column; padding:8px; gap:4px}
+.menu .item{
+  display:flex; align-items:center; gap:10px; color:#d1d5db; padding:10px 12px; border-radius:8px; text-decoration:none;
+}
+.menu .item:hover,.menu .item.active{background:var(--sidebar-hover); color:#fff}
+.menu .item.logout{margin-top:auto; color:#fca5a5}
+.menu .icon{width:18px;text-align:center}
+
+.content{flex:1; display:flex; flex-direction:column; min-width:0}
+.topbar{
+  height:56px; background:#fff; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center; padding:0 16px;
+}
+.page{padding:16px}
+.card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px}
+
+@media (max-width:980px){
+  .sidebar{position:fixed; left:-260px; transition:left .2s}
+  .sidebar.open{left:0}
+  .content{margin-left:0}
+}

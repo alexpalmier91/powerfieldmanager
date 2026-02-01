@@ -1,0 +1,690 @@
+<!-- app/static/labo/editor/sandbox/sandbox_text_circle.html
+     Sandbox autonome — Bloc “Texte sur cercle” + TextToolbar (Bridge)
+     ✅ Sans dépendances externes
+     ✅ Vanilla JS (Chrome + Firefox)
+
+     IMPORTANT :
+     - Cette sandbox charge la toolbar “commune” (TextToolbarTools + Bridge + pickers).
+     - Le bloc text_circle_tools.js doit exposer:
+         tc.attachTextToolbarBridge({ hostEl })  (recommandé)
+       et appeler tb.update() quand on sélectionne l'objet (clic simple).
+-->
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sandbox — Texte sur cercle + Toolbar</title>
+    <style>
+      :root{
+        --bg:#0b1220;
+        --panel:#0f172a;
+        --panel2:#111c33;
+        --border:rgba(255,255,255,.12);
+        --muted:rgba(255,255,255,.7);
+        --text:#e5e7eb;
+        --accent:#60a5fa;
+        --page:#ffffff;
+        --shadow:0 18px 45px rgba(0,0,0,.35);
+        --radius:14px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      }
+
+      *{ box-sizing:border-box; }
+      html,body{ height:100%; }
+      body{
+        margin:0;
+        font-family:var(--sans);
+        background:
+          radial-gradient(1200px 700px at 30% 10%, rgba(96,165,250,.22), transparent 60%),
+          radial-gradient(900px 600px at 80% 30%, rgba(34,197,94,.16), transparent 55%),
+          linear-gradient(180deg, #071023, #070b16 60%, #060713);
+        color:var(--text);
+      }
+
+      .app{
+        height:100%;
+        display:grid;
+        grid-template-columns: 330px 1fr;
+        gap:16px;
+        padding:16px;
+      }
+
+      /* Sidebar */
+      .side{
+        background:linear-gradient(180deg, rgba(17,24,39,.62), rgba(15,23,42,.62));
+        border:1px solid var(--border);
+        border-radius:var(--radius);
+        box-shadow:var(--shadow);
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .side header{
+        padding:14px 14px 10px;
+        border-bottom:1px solid var(--border);
+        background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      }
+      .side header h1{
+        font-size:14px;
+        margin:0 0 4px;
+        letter-spacing:.2px;
+      }
+      .side header p{
+        margin:0;
+        font-size:12px;
+        color:var(--muted);
+        line-height:1.35;
+      }
+
+      .side .content{
+        padding:14px;
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+        overflow:auto;
+      }
+
+      .group{
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:12px;
+        background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+      }
+      .group h2{
+        margin:0 0 10px;
+        font-size:12px;
+        text-transform:uppercase;
+        letter-spacing:.12em;
+        color:rgba(255,255,255,.72);
+      }
+
+      .row{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap:10px;
+        margin-bottom:10px;
+      }
+      .row:last-child{ margin-bottom:0; }
+
+      label{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        font-size:12px;
+        color:rgba(255,255,255,.82);
+      }
+      input[type="text"], input[type="number"], select, textarea, input[type="range"], input[type="color"]{
+        width:100%;
+        background:rgba(255,255,255,.06);
+        border:1px solid var(--border);
+        color:var(--text);
+        border-radius:10px;
+        padding:9px 10px;
+        outline:none;
+      }
+      input[type="color"]{
+        padding:0;
+        height:38px;
+        border-radius:10px;
+      }
+      input[type="range"]{ padding:0; height:28px; }
+      textarea{
+        min-height:160px;
+        font-family:var(--mono);
+        font-size:11px;
+        line-height:1.35;
+        white-space:pre;
+        resize:vertical;
+      }
+
+      .btn{
+        appearance:none;
+        border:1px solid rgba(96,165,250,.35);
+        background:linear-gradient(180deg, rgba(96,165,250,.18), rgba(96,165,250,.06));
+        color:var(--text);
+        border-radius:12px;
+        padding:10px 12px;
+        cursor:pointer;
+        font-weight:650;
+        letter-spacing:.2px;
+        transition:transform .06s ease, background .12s ease, border-color .12s ease;
+      }
+      .btn:hover{ border-color:rgba(96,165,250,.55); background:linear-gradient(180deg, rgba(96,165,250,.24), rgba(96,165,250,.08)); }
+      .btn:active{ transform:translateY(1px); }
+      .btn.secondary{
+        border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.06);
+        font-weight:600;
+      }
+      .btn.danger{
+        border:1px solid rgba(239,68,68,.35);
+        background:linear-gradient(180deg, rgba(239,68,68,.16), rgba(239,68,68,.06));
+      }
+
+      .seg{
+        display:flex;
+        gap:8px;
+      }
+      .seg button{
+        flex:1;
+        padding:9px 10px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.06);
+        color:var(--text);
+        cursor:pointer;
+        font-weight:650;
+      }
+      .seg button[aria-pressed="true"]{
+        border-color:rgba(96,165,250,.6);
+        background:rgba(96,165,250,.16);
+      }
+
+      .tiny{
+        font-size:11px;
+        color:rgba(255,255,255,.72);
+        line-height:1.35;
+      }
+      .kbd{
+        display:inline-block;
+        padding:1px 6px;
+        border-radius:7px;
+        border:1px solid rgba(255,255,255,.18);
+        background:rgba(255,255,255,.06);
+        font-family:var(--mono);
+        font-size:11px;
+      }
+
+      /* Stage */
+      .stage{
+        position:relative;
+        border:1px solid var(--border);
+        border-radius:var(--radius);
+        background:linear-gradient(180deg, rgba(17,24,39,.45), rgba(2,6,23,.25));
+        box-shadow:var(--shadow);
+        overflow:hidden;
+      }
+      .stageTop{
+        position:absolute;
+        inset:0 0 auto 0;
+        height:48px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:0 14px;
+        border-bottom:1px solid var(--border);
+        background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+        z-index:5;
+        pointer-events:none;
+      }
+      .badge{
+        font-size:12px;
+        color:rgba(255,255,255,.78);
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.12);
+        padding:6px 10px;
+        border-radius:999px;
+      }
+      .badge strong{ color:#fff; }
+
+      .workspace{
+        position:absolute;
+        inset:48px 0 0 0;
+        overflow:auto;
+      }
+
+      .pageWrap{
+        min-height:100%;
+        display:flex;
+        align-items:flex-start;
+        justify-content:center;
+        padding:30px 18px 50px;
+      }
+
+      .page{
+        width: 820px;
+        height: 1120px;
+        background:var(--page);
+        border-radius:16px;
+        box-shadow: 0 30px 80px rgba(0,0,0,.35);
+        position:relative;
+        overflow:hidden;
+      }
+
+      /* overlay: zone d’objets */
+      .pageOverlay{
+        position:absolute;
+        inset:0;
+        pointer-events:auto;
+      }
+
+      .gridHint{
+        position:absolute;
+        inset:0;
+        background-image:
+          linear-gradient(to right, rgba(0,0,0,.06) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(0,0,0,.06) 1px, transparent 1px);
+        background-size: 40px 40px;
+        opacity:.25;
+        pointer-events:none;
+      }
+
+      .note{
+        position:absolute;
+        left:14px;
+        bottom:14px;
+        right:14px;
+        font-size:12px;
+        color:rgba(255,255,255,.82);
+        z-index:6;
+        pointer-events:none;
+        text-shadow:0 1px 0 rgba(0,0,0,.4);
+      }
+      .note .chip{
+        display:inline-block;
+        padding:6px 10px;
+        border-radius:999px;
+        background:rgba(0,0,0,.35);
+        border:1px solid rgba(255,255,255,.15);
+        margin-right:8px;
+      }
+
+      /* Host toolbar */
+      .toolbarHost{
+        position:absolute;
+        inset:0;
+        z-index:50;
+        pointer-events:none;
+      }
+      .toolbarHost .tt-toolbar{
+        pointer-events:auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="side">
+        <header>
+          <h1>Sandbox — Texte sur cercle</h1>
+          <p>Interactions + édition texte + toolbar commune (Bridge).</p>
+        </header>
+
+        <div class="content">
+          <div class="group">
+            <h2>Actions</h2>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn" id="btnAdd">Ajouter texte cercle</button>
+              <button class="btn secondary" id="btnDeselect">Désélection</button>
+              <button class="btn danger" id="btnDelete">Supprimer sélection</button>
+            </div>
+            <p class="tiny" style="margin:10px 0 0;">
+              <span class="kbd">Double-clic</span> pour éditer • <span class="kbd">Suppr</span> pour supprimer •
+              Rotation : <span class="kbd">Shift</span> = snap 15°
+            </p>
+          </div>
+
+          <div class="group">
+            <h2>Texte (quick)</h2>
+            <p class="tiny" style="margin:0 0 10px;">
+              Ces contrôles restent utiles hors édition. En édition, la toolbar commune prend le relais.
+            </p>
+
+            <label>
+              Valeur (applique sur l’objet sélectionné)
+              <input id="textValue" type="text" value="TEXTE SUR CERCLE" />
+            </label>
+
+            <div class="row" style="margin-top:10px;">
+              <label>
+                Extérieur / Intérieur
+                <div class="seg">
+                  <button id="btnOuter" aria-pressed="true" type="button">Extérieur</button>
+                  <button id="btnInner" aria-pressed="false" type="button">Intérieur</button>
+                </div>
+              </label>
+
+              <label>
+                Couleur
+                <input id="textColor" type="color" value="#111827" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                Police
+                <select id="fontFamily">
+                  <option value="Arial" selected>Arial</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier New</option>
+                </select>
+              </label>
+              <label>
+                Taille
+                <input id="fontSize" type="number" min="6" max="220" step="1" value="28" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                StartAngle (°)
+                <input id="startAngle" type="range" min="0" max="360" value="0" />
+              </label>
+              <label>
+                Letter-spacing (px)
+                <input id="letterSpacing" type="number" step="0.1" value="0" />
+              </label>
+            </div>
+          </div>
+
+          <div class="group">
+            <h2>Debug</h2>
+            <label>
+              Draft JSON (live)
+              <textarea id="dbg" spellcheck="false"></textarea>
+            </label>
+            <p class="tiny" style="margin:10px 0 0;">
+              controller : <span class="kbd">window.tc</span> • toolbar : <span class="kbd">window.tb</span>
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Stage -->
+      <main class="stage" id="stage">
+        <div class="stageTop">
+          <div class="left">
+            <span class="badge">Overlay: <strong>1 page</strong></span>
+            <span class="badge">Toolbar: <strong>Bridge</strong></span>
+          </div>
+          <div class="right">
+            <span class="badge">Zoom: <strong>1.00</strong></span>
+          </div>
+        </div>
+
+        <div class="workspace">
+          <div class="pageWrap">
+            <div class="page" id="page">
+              <div class="gridHint"></div>
+              <div class="pageOverlay" id="overlay"></div>
+
+              <!-- Host overlay pour la toolbar -->
+              <div class="toolbarHost" id="toolbarHost"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          <span class="chip">Hover cercle = curseur texte</span>
+          <span class="chip">Clic = sélection + toolbar</span>
+          <span class="chip">Double-clic = édition</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- =========================================================
+         Core toolbar stack (ordre important) — FIX ESM/Classic
+         ========================================================= -->
+   <!-- 1) Color picker = classic IIFE -->
+	<script src="../color_picker_tools.js?v=1"></script>
+
+	<!-- 2) Font picker = ESM -> exposé en global -->
+	<script type="module">
+	  import * as FontPickerTools from "../font_picker_tools.js?v=1";
+	  window.FontPickerTools = FontPickerTools;
+	  window.__PICKERS_READY__ = true;
+	  console.log("[sandbox] FontPickerTools ready (module)", !!window.FontPickerTools);
+	</script>
+
+	<!-- 3) Loader classic: attend pickers, puis charge toolbar + text_circle -->
+	<script>
+	  (function () {
+		"use strict";
+
+		function loadClassic(src) {
+		  return new Promise((resolve, reject) => {
+			const s = document.createElement("script");
+			s.src = src;
+			s.async = false;
+			s.onload = () => resolve(true);
+			s.onerror = (e) => reject(e);
+			document.head.appendChild(s);
+		  });
+		}
+
+		function waitFor(check, timeout = 6000) {
+		  const t0 = performance.now();
+		  return new Promise((resolve, reject) => {
+			(function tick() {
+			  try { if (check()) return resolve(true); } catch (_) {}
+			  if (performance.now() - t0 > timeout) return reject(new Error("waitFor timeout"));
+			  setTimeout(tick, 20);
+			})();
+		  });
+		}
+
+		(async () => {
+		  // attendre les globals
+		  await waitFor(() => window.ColorPickerTools && window.__PICKERS_READY__ && window.FontPickerTools, 6000);
+		  console.log("[sandbox] pickers globals OK", !!window.ColorPickerTools, !!window.FontPickerTools);
+
+		  // charger la toolbar stack
+		  await loadClassic("../text_toolbar_tools.js?v=1");
+		  await loadClassic("../text_toolbar_bridge.js?v=1");
+
+		  // charger le controller cercle
+		  console.log("[sandbox] loading text_circle_tools...");
+		  await loadClassic("../text_circle_tools.js?v=1");
+		  console.log("[sandbox] text_circle loaded, controller =", typeof window.createTextCircleController);
+
+		  // flag ready
+		  window.__SANDBOX_STACK_READY__ = true;
+		})().catch((e) => console.error("[sandbox loader] failed", e));
+	  })();
+	</script>
+
+
+    <!-- =========================================================
+         Boot (inchangé)
+         ========================================================= -->
+    <script>
+
+      (function () {
+        "use strict";
+
+        const overlayEl = document.getElementById("overlay");
+        const toolbarHostEl = document.getElementById("toolbarHost");
+        const dbg = document.getElementById("dbg");
+
+        const draft = { pages: [{ objects: [] }] };
+
+        function updateDbg() {
+          try { dbg.value = JSON.stringify(draft.pages[0].objects, null, 2); }
+          catch (e) { dbg.value = String(e); }
+        }
+
+        function waitFor(fnCheck, { timeout = 2500, step = 20 } = {}) {
+          return new Promise((resolve, reject) => {
+            const t0 = performance.now();
+            (function tick() {
+              try { if (fnCheck()) return resolve(true); } catch (_) {}
+              if (performance.now() - t0 > timeout) return reject(new Error("waitFor timeout"));
+              setTimeout(tick, step);
+            })();
+          });
+        }
+
+        function setSideUI(side) {
+          const outerBtn = document.getElementById("btnOuter");
+          const innerBtn = document.getElementById("btnInner");
+          outerBtn.setAttribute("aria-pressed", side === "outer" ? "true" : "false");
+          innerBtn.setAttribute("aria-pressed", side === "inner" ? "true" : "false");
+        }
+
+        function getSelectedId(tc) {
+          if (tc && typeof tc.getSelected === "function") return tc.getSelected();
+          try {
+            const host = tc && tc._getTextHost && tc._getTextHost();
+            if (host && typeof host.getSelectedId === "function") return host.getSelectedId();
+          } catch (_) {}
+          return null;
+        }
+
+        function getSelectedObj(tc) {
+          const id = getSelectedId(tc);
+          if (!id) return null;
+          return draft.pages[0].objects.find((o) => o && o.id === id) || null;
+        }
+
+        function applyToSelected(tc, tb, mutator) {
+          const o = getSelectedObj(tc);
+          if (!o) return;
+          mutator(o);
+          tc.render();
+          try { tb && tb.update && tb.update(); } catch (_) {}
+          updateDbg();
+        }
+
+       async function boot() {
+		  console.log("[sandbox] boot start");
+
+		  // ✅ attendre la fin du loader (pickers + toolbar + text_circle)
+		  try {
+			await waitFor(() => window.__SANDBOX_STACK_READY__ === true, { timeout: 8000 });
+		  } catch (e) {
+			console.error("[sandbox] stack pas prête (loader)", e);
+			return;
+		  }
+
+		  try {
+			await waitFor(() => !!window.createTextCircleController, { timeout: 6000 });
+		  } catch (e) {
+			console.error("[sandbox] createTextCircleController introuvable", e);
+			return;
+		  }
+
+          const tc = window.createTextCircleController({
+            overlayEl,
+            draft,
+            pageIndex: 0,
+            fonts: [
+              { key: "helv", family: "Helvetica" },
+              { key: "Arial", family: "Arial" },
+              { key: "Inter", family: "Inter" },
+              { key: "Helvetica", family: "Helvetica" },
+              { key: "Times New Roman", family: "Times New Roman" },
+              { key: "Georgia", family: "Georgia" },
+              { key: "Courier New", family: "Courier New" },
+            ],
+            onChange: updateDbg,
+          });
+
+          window.tc = tc;
+          tc.attach();
+          tc.render();
+          updateDbg();
+
+          let tb = null;
+          if (window.TextToolbarBridge && window.TextToolbarTools && typeof tc.attachTextToolbarBridge === "function") {
+            try {
+              tb = tc.attachTextToolbarBridge({ hostEl: toolbarHostEl });
+              window.tb = tb;
+              console.log("[sandbox] toolbar bridged", tb);
+              try { tb && tb.update && tb.update(); } catch (_) {}
+            } catch (e) {
+              console.warn("[sandbox] attachTextToolbarBridge error", e);
+            }
+          } else {
+            console.warn("[sandbox] toolbar non branchée (tc.attachTextToolbarBridge manquant ou stack non chargée)");
+          }
+
+          document.getElementById("btnAdd").addEventListener("click", () => {
+            const side = document.getElementById("btnInner").getAttribute("aria-pressed") === "true" ? "inner" : "outer";
+            const text = document.getElementById("textValue").value || "Texte sur cercle";
+            const family = document.getElementById("fontFamily").value || "Arial";
+            const size = Number(document.getElementById("fontSize").value || 28);
+            const color = document.getElementById("textColor").value || "#111827";
+
+            const obj = tc.insertTextCircle({
+              x: 410,
+              y: 420,
+              r: 150,
+              text,
+              side,
+              rotation: 0,
+              startAngle: Number(document.getElementById("startAngle").value || 0),
+              color,
+              font: {
+                family,
+                size,
+                weight: "400",
+                style: "normal",
+                underline: false,
+                letterSpacing: Number(document.getElementById("letterSpacing").value || 0),
+                transform: "none",
+              },
+            });
+
+            console.log("[sandbox] insertTextCircle ->", obj);
+            if (obj) setSideUI(obj.side === "inner" ? "inner" : "outer");
+
+            try { tb && tb.update && tb.update(); } catch (_) {}
+            updateDbg();
+          });
+
+          document.getElementById("btnDeselect").addEventListener("click", () => {
+            tc.select(null);
+            try { tb && tb.closePopovers && tb.closePopovers(); } catch (_) {}
+            try { tb && tb.update && tb.update(); } catch (_) {}
+            updateDbg();
+          });
+
+          document.getElementById("btnDelete").addEventListener("click", () => {
+            const id = getSelectedId(tc);
+            if (!id) return;
+            tc.delete(id);
+            try { tb && tb.closePopovers && tb.closePopovers(); } catch (_) {}
+            try { tb && tb.update && tb.update(); } catch (_) {}
+            updateDbg();
+          });
+
+          function setSide(side) {
+            setSideUI(side);
+            applyToSelected(tc, tb, (o) => { o.side = side; });
+          }
+          document.getElementById("btnOuter").addEventListener("click", () => setSide("outer"));
+          document.getElementById("btnInner").addEventListener("click", () => setSide("inner"));
+
+          document.getElementById("textValue").addEventListener("input", (e) => {
+            applyToSelected(tc, tb, (o) => { o.text = e.target.value; });
+          });
+          document.getElementById("textColor").addEventListener("input", (e) => {
+            applyToSelected(tc, tb, (o) => { o.color = e.target.value; });
+          });
+          document.getElementById("fontFamily").addEventListener("change", (e) => {
+            applyToSelected(tc, tb, (o) => { o.font = o.font || {}; o.font.family = e.target.value; });
+          });
+          document.getElementById("fontSize").addEventListener("input", (e) => {
+            applyToSelected(tc, tb, (o) => { o.font = o.font || {}; o.font.size = Number(e.target.value || 28); });
+          });
+          document.getElementById("startAngle").addEventListener("input", (e) => {
+            applyToSelected(tc, tb, (o) => { o.startAngle = Number(e.target.value || 0); });
+          });
+          document.getElementById("letterSpacing").addEventListener("input", (e) => {
+            applyToSelected(tc, tb, (o) => { o.font = o.font || {}; o.font.letterSpacing = Number(e.target.value || 0); });
+          });
+
+          console.log("[sandbox] READY -> window.tc / window.tb");
+        }
+
+        queueMicrotask(() => setTimeout(boot, 0));
+      })();
+    </script>
+  </body>
+</html>

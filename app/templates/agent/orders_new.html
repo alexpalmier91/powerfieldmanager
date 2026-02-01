@@ -1,0 +1,124 @@
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<div class="agent-new-order" style="display:flex;gap:16px;">
+  <div style="flex:1;min-width:320px;">
+
+    <!-- Client -->
+    <section class="card" style="padding:12px;margin-bottom:16px;">
+      <h2 style="margin:0 0 8px;">
+        {{ _("agent.create_order.client.title") }}
+      </h2>
+      <div id="client-selector">
+        <input id="client-search"
+               type="text"
+               placeholder="{{ _('agent.create_order.client.search_placeholder') }}"
+               style="width:100%;padding:8px;">
+        <div id="client-results" style="margin-top:8px;"></div>
+        <div id="client-picked" style="margin-top:8px;display:none;"></div>
+      </div>
+    </section>
+
+    <!-- Labo -->
+    <section class="card" style="padding:12px;margin-bottom:16px;">
+      <h2 style="margin:0 0 8px;">
+        {{ _("agent.create_order.labo.title") }}
+      </h2>
+      <select id="labo-select" style="width:100%;padding:8px;"></select>
+    </section>
+
+    <!-- Catalogue -->
+    <section class="card" style="padding:12px;">
+      <h2 style="margin:0 0 8px;">
+        {{ _("agent.create_order.catalog.title") }}
+      </h2>
+	<div style="display:flex;gap:8px;margin-bottom:8px;">
+	  <input id="product-search"
+			 type="text"
+			 placeholder="Rechercher un produit (nom, SKU, EAN)"
+			 style="flex:1;padding:8px;">
+
+	  <select id="product-sort" style="padding:8px;">
+		<option value="name:asc">Nom ↑</option>
+		<option value="name:desc">Nom ↓</option>
+		<option value="sku:asc">Référence ↑</option>
+		<option value="sku:desc">Référence ↓</option>
+	  </select>
+	</div>
+      <div id="catalog-table"
+           style="max-height:60vh;overflow:auto;border:1px solid #eee;border-radius:8px;"></div>
+      <div id="catalog-loader"
+           style="text-align:center;padding:8px;display:none;">
+        {{ _("agent.create_order.catalog.loading") }}
+      </div>
+    </section>
+  </div>
+
+  <!-- Panier + meta commande -->
+  <aside id="cart"
+         class="card"
+         style="width:380px;min-width:320px;padding:12px;position:sticky;top:12px;align-self:flex-start;">
+    <h2 style="margin:0 0 8px;">
+      {{ _("agent.create_order.cart.title") }}
+    </h2>
+
+    <!-- Meta commande -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <div>
+        <label for="delivery-date" style="display:block;font-weight:600;font-size:0.9rem;margin-bottom:2px;">
+          Date de livraison
+        </label>
+			<input
+			  type="date"
+			  id="delivery-date"
+			  name="delivery_date"
+			  style="width:100%;padding:6px;"
+			>
+
+      </div>
+      <div>
+        <label for="payment-method" style="display:block;font-weight:600;font-size:0.9rem;margin-bottom:2px;">
+          Mode de paiement
+        </label>
+			<select id="payment-method" name="payment_method" style="width:100%;padding:6px;">
+			  <option value="">— Sélectionner —</option>
+			  <option value="LCR 30 jours">LCR 30 jours</option>
+			  <option value="Chèque">Chèque</option>
+			  <option value="Virement">Virement</option>
+			  <option value="Autre">Autre</option>
+			</select>
+
+      </div>
+      <div>
+        <label for="order-comment" style="display:block;font-weight:600;font-size:0.9rem;margin-bottom:2px;">
+          Commentaire
+        </label>
+        <textarea id="order-comment"
+                  rows="2"
+                  maxlength="2000"
+                  placeholder="Commentaire (optionnel)"
+                  style="width:100%;padding:6px;resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <!-- Lignes du panier -->
+    <div id="cart-lines"></div>
+    <hr>
+    <div style="display:flex;justify-content:space-between;font-weight:600;">
+      <span>{{ _("agent.create_order.cart.total_ht") }}</span>
+      <span id="cart-total">0.00 €</span>
+    </div>
+    <button id="btn-submit"
+            style="margin-top:12px;width:100%;padding:10px;">
+      {{ _("agent.create_order.cart.submit") }}
+    </button>
+    <div id="cart-error"
+         style="color:#b91c1c;margin-top:8px;display:none;"></div>
+    <div id="cart-success"
+         style="color:#065f46;margin-top:8px;display:none;"></div>
+  </aside>
+</div>
+
+<link rel="stylesheet" href="/static/agent/pages/labos/catalog.css?v7">
+<script type="module" src="/static/agent/pages/orders/new/index.js?v=13"></script>
+{% endblock %}

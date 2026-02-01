@@ -1,0 +1,79 @@
+{# app/templates/agent/stats_sales.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Statistiques de ventes{% endblock %}
+{% block breadcrumb %}Statistiques de ventes{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:16px;">
+  <h2 style="margin:0 0 8px;">Statistiques de ventes</h2>
+  <p style="margin:0;color:#666;font-size:.9rem;">
+    Analyse du CA facturé et du CA potentiel des bons de commande.
+  </p>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+    <!-- Période -->
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="period-select" style="font-size:.85rem;font-weight:600;">Période</label>
+      <select id="period-select" style="min-width:160px;padding:4px 8px;">
+        <option value="last_12_months" selected>12 derniers mois</option>
+        <option value="current_year">Année en cours</option>
+      </select>
+    </div>
+
+    <!-- Labo -->
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="labo-select" style="font-size:.85rem;font-weight:600;">Laboratoire</label>
+      <select id="labo-select" style="min-width:200px;padding:4px 8px;">
+        <option value="">Tous les labos</option>
+      </select>
+    </div>
+
+    <!-- Date de / à -->
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label style="font-size:.85rem;font-weight:600;">Filtrer par dates</label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="date" id="date-from" style="padding:4px 6px;">
+        <span style="font-size:.85rem;">à</span>
+        <input type="date" id="date-to" style="padding:4px 6px;">
+      </div>
+      <small style="font-size:.75rem;color:#777;">
+        Si les deux dates sont remplies, elles priment sur la période.
+      </small>
+    </div>
+
+    <!-- Bouton appliquer -->
+    <div>
+      <button id="apply-filters"
+              style="padding:6px 12px;border:none;border-radius:4px;background:#2563eb;color:white;font-size:.85rem;cursor:pointer;">
+        Appliquer
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <h3 style="margin:0;font-size:1rem;">CA facturé vs CA potentiel (BC)</h3>
+    <div id="period-label"
+         style="font-size:.85rem;color:#666;">
+      Chargement de la période...
+    </div>
+  </div>
+
+  <div id="chart-loading" style="font-size:.9rem;color:#666;">
+    Chargement du graphique...
+  </div>
+
+  <canvas id="sales-chart" style="max-width:100%;margin-top:8px;"></canvas>
+</div>
+{% endblock %}
+
+
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="/static/agent/agent_stats_sales.js"></script>
+{% endblock %}

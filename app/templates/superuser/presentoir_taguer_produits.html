@@ -1,0 +1,45 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}Taguer les produits – {{ presentoir.code }}{% endblock %}
+
+{% block content %}
+<h1>Taguer les produits</h1>
+
+<div class="card">
+  <h3>Présentoir : {{ presentoir.code }}</h3>
+
+  <button id="btn-scan" class="btn btn-primary">
+    Scanner les tags présents
+  </button>
+
+  <p id="scan-result"></p>
+</div>
+
+<div class="card">
+  <h3>Attribution en lot</h3>
+
+  <label>Produit</label>
+  <select id="product-select">
+    <option value="">— Choisir un produit —</option>
+    {% for p in display_products %}
+      <option value="{{ p.id }}">{{ p.sku }} — {{ p.name }}</option>
+    {% endfor %}
+  </select>
+
+  <div style="margin-top:10px;">
+    <label>
+      <input type="checkbox" id="overwrite">
+      Remplacer l’attribution existante
+    </label>
+  </div>
+
+  <button id="btn-assign" class="btn btn-success">
+    Attribuer ce produit aux tags
+  </button>
+</div>
+
+<script>
+  const PRESENTOIR_ID = {{ presentoir.id }};
+</script>
+<script src="/static/superuser/presentoir_taguer_produits.js?version3"></script>
+{% endblock %}

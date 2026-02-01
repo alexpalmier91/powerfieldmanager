@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zentro – Connexion</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; color:#222; }
+    h1 { color:#2563eb; }
+    label { display:block; margin-top:10px; }
+    input, button { padding:8px 10px; font-size:14px; margin-top:6px; }
+    .muted{ color:#6b7280; font-size:12px; }
+    .err{ color:#b91c1c; margin-top:8px; }
+  </style>
+</head>
+<script>
+  // flag debug injecté par /login-debug (optionnel).
+  // Laisse à false si tu utilises /login?debug=1
+  window.__DEBUG_LOGIN__ = {{ 'true' if debug else 'false' }};
+  if (window.__DEBUG_LOGIN__ !== true) {
+    try { window.__DEBUG_LOGIN__ = (new URLSearchParams(location.search).get('debug') === '1'); } catch {}
+  }
+</script>
+<body>
+  <h1>🔐 Connexion</h1>
+
+  <div id="step1">
+    <label>Email</label>
+    <input id="email" type="email" placeholder="vous@example.com" required />
+    <button id="btn-request">Recevoir un code</button>
+    <div id="m1" class="muted"></div>
+    <div id="e1" class="err"></div>
+  </div>
+
+  <div id="step2" style="display:none;">
+    <label>Code reçu par email</label>
+    <input id="code" type="text" inputmode="numeric" minlength="4" maxlength="8" placeholder="123456" required />
+    <button id="btn-verify">Se connecter</button>
+    <div id="m2" class="muted"></div>
+    <div id="e2" class="err"></div>
+  </div>
+
+  <!-- 👉 utilise le JS externe -->
+ <script type="module" src="/static/js/login.js?v=20251211-LOGOUTFIX"></script>
+</body>
+</html>

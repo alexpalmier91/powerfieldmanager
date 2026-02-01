@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zentro – Superuser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; color:#1f2937; }
+    h1 { color:#111827; font-size: 22px; margin: 0 0 6px; }
+    .muted { color:#6b7280; font-size: 13px; margin-bottom: 16px; }
+    .err { color:#b91c1c; margin-top:10px; }
+    .ok { color:#15803d; margin-top:10px; }
+    .warn { color:#b45309; margin-top:10px; }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:16px; }
+    button { padding:8px 12px; border-radius:8px; border:1px solid #d1d5db; cursor:pointer; background:#fff; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+    input[type="file"], input[type="text"] {
+      border:1px solid #d1d5db; border-radius:8px; padding:8px 10px; font-size:14px;
+    }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { text-align:left; border-bottom:1px solid #e5e7eb; padding:8px; font-size:14px; }
+    th { background:#f9fafb; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .toolbar { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .chip { font-size:12px; color:#6b7280; }
+    .empty { color:#6b7280; font-style:italic; }
+  </style>
+</head>
+<body>
+  <h1>🛡️ Espace Superuser</h1>
+  <div class="muted">Validation des labos/agents, import clients, etc.</div>
+
+  <div id="who"></div>
+
+  <!-- Bloc Pending -->
+  <div class="card">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <strong>Demandes en attente</strong>
+      <button id="btn-refresh">Rafraîchir</button>
+    </div>
+    <div id="pending-err" class="err"></div>
+    <div id="pending">
+      <em class="muted">Aucune donnée chargée.</em>
+    </div>
+  </div>
+
+  <!-- Bloc Import clients -->
+  <div class="card">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <strong>Importer des clients</strong>
+      <span class="chip">(.xlsx, .csv) → POST /api-zenhub/superuser/import-clients</span>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <input id="file-clients" type="file" accept=".xlsx,.csv" />
+      <button id="btn-import">Uploader</button>
+    </div>
+    <div id="import-msg" class=""></div>
+  </div>
+
+  <!-- Bloc Listing clients -->
+  <div class="card">
+    <div class="toolbar">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <strong>Clients</strong>
+        <span class="chip" id="clients-count">—</span>
+      </div>
+      <input id="clients-search" type="text" placeholder="Rechercher (société ou email)..." />
+    </div>
+    <div id="clients-err" class="err"></div>
+    <div id="clients-wrap">
+	  <table id="clients-table" style="display:none;">
+		<thead>
+		  <tr>
+			<th>ID</th>
+			<th>Société</th>
+			<th>Ville</th>
+			<th>Email</th>
+			<th>Téléphone</th>
+		  </tr>
+		</thead>
+		<tbody id="clients-tbody"></tbody>
+	  </table>
+
+	  <div id="clients-empty" class="empty" style="display:none;">Aucun client.</div>
+
+	  <!-- ⬇️ Loader + sentinelle pour infinite scroll -->
+	  <div id="clients-loading" class="muted" style="display:none; margin-top:8px;">Chargement…</div>
+	  <div id="clients-sentinel" style="height:1px;"></div>
+	</div>
+
+  </div>
+
+  <!-- Fichier JS séparé -->
+  <script src="/static/js/superuser_dashboard.js"></script>
+</body>
+</html>

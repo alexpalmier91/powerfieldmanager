@@ -1,0 +1,118 @@
+{# app/templates/labo/products.html #}
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<div class="app-page">
+
+  <div class="app-page-header">
+    <h1>{{ _("labo.products.title")  }}</h1>
+    <div class="app-page-actions">
+      <input type="text"
+             id="search-input"
+             class="products-search-input"
+             placeholder="{{ _('labo.products.search_placeholder') }}" />
+
+      <button id="btn-export" type="button" class="btn btn-light">
+        {{ _("common.export_excel") }}
+      </button>
+
+      <a href="/labo/products/import" class="btn btn-secondary">
+        {{ _("labo.products.import_link") }}
+      </a>
+    </div>
+  </div>
+
+  <div id="products-container" class="card">
+    <table class="table" id="products-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>{{ _("labo.products.table.id") }}</th>
+          <th class="sortable" data-sort="sku">
+            {{ _("labo.products.table.sku") }}
+          </th>
+          <th class="sortable" data-sort="name">
+            {{ _("labo.products.table.name") }}
+          </th>
+          <th>{{ _("labo.products.table.price_ht") }}</th>
+
+          {# 👉 Colonne Tiers juste après Prix HT #}
+          <th>{{ _("labo.products.table.tiers") or "Tiers price" }}</th>
+
+          <th>{{ _("labo.products.table.commission") or "Commission" }}</th>
+          <th class="sortable" data-sort="stock">
+            {{ _("labo.products.table.stock") }}
+          </th>
+          <th>{{ _("labo.products.table.variants") }}</th>
+          <th>{{ _("labo.products.table.active") }}</th>
+        </tr>
+      </thead>
+      <tbody id="products-tbody">
+        <tr id="row-empty">
+          <td colspan="10">{{ _("labo.products.empty") }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+
+  <!-- Modal tiers price -->
+	  <div id="tiers-modal" class="modal hidden">
+		<div class="modal-content tiers-modal-content">
+		  <button id="tiers-close" type="button" class="tiers-close-btn">&times;</button>
+
+		  <div class="modal-header tiers-modal-header">
+			<h2>
+			  {{ _("labo.products.tiers_modal.title") or "Prix dégressifs" }} –
+			  <span id="tiers-product-name"></span>
+			</h2>
+		  </div>
+
+		  <div class="modal-body tiers-modal-body">
+			<table class="table" id="tiers-table">
+			  <thead>
+				<tr>
+				  <th>{{ _("labo.products.tiers_modal.min_qty") or "Quantité min." }}</th>
+				  <th>{{ _("labo.products.tiers_modal.price_ht") or "Prix HT" }}</th>
+				  <th>{{ _("labo.products.tiers_modal.actions") or "Actions" }}</th>
+				</tr>
+			  </thead>
+			  <tbody id="tiers-tbody">
+				<tr id="tiers-empty">
+				  <td colspan="3">
+					{{ _("labo.products.tiers_modal.no_tiers") or "Aucun palier pour le moment." }}
+				  </td>
+				</tr>
+			  </tbody>
+			</table>
+
+			<form id="tiers-form" class="tiers-form">
+			  <div class="tiers-form-group">
+				<label for="tier-min-qty">
+				  {{ _("labo.products.tiers_modal.form_min_qty") or "Quantité minimale" }}
+				</label>
+				<input type="number" id="tier-min-qty" min="1" required />
+			  </div>
+			  <div class="tiers-form-group">
+				<label for="tier-price-ht">
+				  {{ _("labo.products.tiers_modal.form_price_ht") or "Prix HT" }}
+				</label>
+				<input type="number" step="0.01" id="tier-price-ht" required />
+			  </div>
+			  <button type="submit" class="btn btn-primary tiers-submit-btn">
+				{{ _("labo.products.tiers_modal.form_submit") or "Ajouter le palier" }}
+			  </button>
+			</form>
+		  </div>
+		</div>
+	  </div>
+
+
+
+
+</div>
+
+<link rel="stylesheet" href="/static/labo/products.css">
+<script src="/static/labo/products.js?v=1"></script>
+{% endblock %}

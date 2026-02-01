@@ -1,0 +1,145 @@
+{# app/templates/agent/agenda.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}{{ t(lang, "agent.agenda.title") }}{% endblock %}
+
+{% block content %}
+
+<div id="agenda-root">
+
+  <!-- TITRE + BOUTON NOUVEAU -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3">{{ t(lang, "agent.agenda.title") }}</h1>
+
+    <button class="btn btn-outline-secondary" id="btn-open-create">
+      + {{ t(lang, "agent.agenda.newAppointment", lang) if false else "Nouveau rendez-vous" }}
+    </button>
+  </div>
+
+  <!-- Message global -->
+  <div id="appointments-message" class="alert d-none"></div>
+
+  <!-- CALENDRIER -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+  <!-- LISTE DES RENDEZ-VOUS -->
+  <div class="card">
+    <div class="card-body">
+      <h3 class="h5 mb-3">
+        {{ t(lang, "agent.agenda.listTitle") if false else "Rendez-vous" }}
+      </h3>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>{{ t(lang, "agent.agenda.date", lang) if false else "Date" }}</th>
+              <th>{{ t(lang, "agent.agenda.client", lang) if false else "Client" }}</th>
+              <th>{{ t(lang, "agent.agenda.notes", lang) if false else "Notes" }}</th>
+              <th>{{ t(lang, "agent.agenda.status", lang) if false else "Statut" }}</th>
+              <th class="text-end">{{ t(lang, "common.actions") if false else "Actions" }}</th>
+            </tr>
+          </thead>
+          <tbody id="appointments-tbody">
+            <tr id="appointments-empty-row">
+              <td colspan="5" class="text-center text-muted">
+                {{ t(lang, "agent.agenda.noAppointments", lang) if false else "Aucun rendez-vous pour cette période." }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  {# ================== MODALE RDV ================== #}
+  <div class="modal d-none" id="appointment-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="appointment-modal-title">
+            Nouveau rendez-vous
+          </h5>
+          <button class="btn-close" id="modal-close"></button>
+        </div>
+
+        <div class="modal-body">
+          <form id="appointment-form" class="row g-3">
+            <input type="hidden" id="appointment-id">
+
+            <!-- Client + auto-complete -->
+            <div class="col-12">
+              <label class="form-label">Client</label>
+              <input type="text"
+                     id="client-search"
+                     class="form-control"
+                     autocomplete="off"
+                     placeholder="Recherche (nom / ville / CP)">
+              <input type="hidden" id="client-id">
+              <div id="client-suggestions" class="dropdown-menu w-100 mt-1"></div>
+            </div>
+
+            <!-- Date/heure -->
+            <div class="col-md-6">
+              <label class="form-label">Date & heure</label>
+              <input type="datetime-local"
+                     id="start-datetime"
+                     class="form-control"
+                     required>
+            </div>
+
+            <!-- Statut -->
+            <div class="col-md-6">
+              <label class="form-label">Statut</label>
+              <select id="status" class="form-select">
+                <option value="planned">Prévu</option>
+                <option value="done">Réalisé</option>
+                <option value="cancelled">Annulé</option>
+              </select>
+            </div>
+
+            <!-- Notes -->
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea id="notes" class="form-control" rows="3"></textarea>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">
+            Annuler
+          </button>
+          <button class="btn btn-primary" id="modal-save">
+            Valider
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+  {# FullCalendar (CDN) #}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+  {# CSS spécifique #}
+  <link rel="stylesheet" href="/static/agent/agent_appointments.css">
+
+  {# JS agenda agent #}
+  <script src="/static/agent/agent_appointments.js" type="module"></script>
+
+{% endblock %}

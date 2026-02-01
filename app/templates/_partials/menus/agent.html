@@ -1,0 +1,39 @@
+{# app/templates/_partials/menus/agent.html #}
+
+{# Menu AGENT - ajout : Documents labo (/agent/marketing-documents) #}
+{% set items = [
+  {"href": "/agent/dashboard",           "label": _("Dashboard"),             "icon": "🏠"},
+  {"href": "/agent/clients",             "label": _("Mes clients"),           "icon": "👥"},
+  {"href": "/agent/stats-sales",         "label": _("Statistiques ventes"),   "icon": "📊"},
+  {"href": "/agent/orders/new",          "label": _("Créer une commande"),    "icon": "➕"},
+  {"href": "/agent/orders",              "label": _("Mes commandes"),         "icon": "📄"},
+  {"href": "/agent/labos",               "label": _("Mes labos"),             "icon": "🏭"},
+  {"href": "/agent/marketing-documents", "label": _("Documents labo"),        "icon": "📄"},
+  {"href": "/agent/agenda",              "label": _("Agenda"),                "icon": "📅"}
+] %}
+
+{% set path = request.url.path %}
+{% set is_new_order = path.startswith('/agent/orders/new') %}
+
+<nav class="menu" role="navigation">
+  {% for it in items %}
+    {% if it.href == '/agent/orders' %}
+      {# Active pour /agent/orders et ses sous-pages, sauf /agent/orders/new #}
+      {% set active = (path.startswith('/agent/orders') and not is_new_order) %}
+    {% elif it.href == '/agent/orders/new' %}
+      {# Active uniquement pour la page de création #}
+      {% set active = is_new_order %}
+    {% else %}
+      {% set active = path.startswith(it.href) %}
+    {% endif %}
+
+    <a class="item {{ 'active' if active }}" href="{{ it.href }}" aria-current="{{ 'page' if active }}">
+      <span class="icon">{{ it.icon }}</span>
+      <span class="label">{{ it.label }}</span>
+    </a>
+  {% endfor %}
+
+  <button type="button" id="logoutBtn">
+    Déconnexion
+  </button>
+</nav>

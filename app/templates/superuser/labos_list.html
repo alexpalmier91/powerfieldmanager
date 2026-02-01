@@ -1,0 +1,87 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}Labos{% endblock %}
+{% block breadcrumb %}Superuser / Labos{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0;">Labos</h1>
+        <p style="margin:6px 0 0; color:#6b7280;">Créer et gérer les profils labo + logo PDF.</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="q" class="input" placeholder="Rechercher un labo…" style="min-width:240px;">
+        <button id="btnSearch" class="btn">Rechercher</button>
+        <a class="btn btn-primary" href="/superuser/labos/new">+ Nouveau labo</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div id="labosLoading" style="color:#6b7280;">Chargement…</div>
+    <div id="labosError" style="display:none; color:#b91c1c;"></div>
+
+    <div style="overflow:auto;">
+	  <table class="table" id="labosTable" style="width:100%; margin-top:12px; table-layout:fixed; border-collapse:collapse;">
+		<colgroup>
+		  <col style="width:70px;">
+		  <col style="width:260px;">
+		  <col style="width:180px;">
+		  <col style="width:240px;">
+		  <col style="width:90px;">
+		  <col style="width:120px;">
+		  <col style="width:120px;">
+		</colgroup>
+
+		<thead>
+		  <tr>
+			<th>ID</th>
+			<th>Nom</th>
+			<th>Ville</th>
+			<th>Email</th>
+			<th>Actif</th>
+			<th>Logo</th>
+			<th></th>
+		  </tr>
+		</thead>
+		<tbody id="labosTbody"></tbody>
+	  </table>
+	</div>
+
+	<style>
+	  /* ✅ aligne th/td parfaitement */
+	  #labosTable th, #labosTable td{
+		padding: 10px 12px;
+		text-align: left;
+		vertical-align: middle;
+		border-bottom: 1px solid #e5e7eb;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	  }
+	  #labosTable th{
+		font-weight: 600;
+		color:#111827;
+	  }
+	  #labosTable td.col-center, #labosTable th.col-center{
+		text-align:center;
+	  }
+	  .labo-logo{
+		height: 28px;
+		width: auto;
+		display: inline-block;
+		border-radius: 6px;
+		border: 1px solid #e5e7eb;
+		background: #fff;
+		padding: 2px;
+	  }
+	</style>
+
+  </div>
+
+	<script>
+	  window.SUPERUSER_LABOS_PAGE = { mode: "list" };
+	</script>
+	<script src="/static/superuser/labos.js?v2"></script>
+{% endblock %}

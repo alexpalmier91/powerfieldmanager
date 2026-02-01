@@ -1,0 +1,340 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "no_result": "No results",
+    "empty": "No items yet.",
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "search": "Search",
+    "previous": "Previous",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "filters": "Filters",
+    "apply_filters": "Apply filters",
+    "reset_filters": "Reset",
+    "export_csv": "Export CSV",
+    "export_excel": "Export Excel"
+  },
+
+  "labo": {
+    "dashboard": {
+      "title": "🏭 Labo Dashboard",
+      "breadcrumb": "Labo / Dashboard",
+      "connected_as": "You are logged in as a Labo account",
+      "stats_loading": "Loading statistics…",
+      "impersonation_title": "⚠️ Impersonation mode",
+      "impersonation_desc": "If you see this message, you are likely impersonating a Labo account from the SuperUser dashboard.",
+      "exit_impersonation": "Exit Labo mode and return to SuperUser",
+      "stats": {
+        "labo_id": "Labo ID",
+        "product_count": "Number of products"
+      }
+    },
+
+    "agents": {
+      "title": "Sales agents linked to this labo",
+      "table": {
+        "id": "ID",
+        "name": "Agent name"
+      },
+      "loading": "Loading…",
+      "empty": "No agents linked to this labo."
+    },
+
+    "orders": {
+      "title": "📦 Received orders",
+      "search_placeholder": "Search (order number, client, agent, client code)…",
+
+      "filters": {
+        "status_label": "Status",
+        "status_all": "All",
+        "status_draft": "Draft",
+        "status_validated": "Validated",
+        "status_shipped": "Shipped",
+        "status_cancelled": "Cancelled",
+        "date_from": "From",
+        "date_to": "to",
+        "agent": "Agent",
+        "apply": "Filter"
+      },
+
+      "table": {
+        "order_number": "Order #",
+        "date": "Order date",
+        "delivery_date": "Delivery date",
+        "client": "Client",
+        "total_ht": "Amount excl. VAT",
+        "status": "Status",
+        "lines_qty": "Lines qty",
+        "agent": "Agent"
+      },
+
+      "empty": "No orders yet.",
+      "modal_title": "Order details"
+    },
+
+    "products": {
+      "title": "🧪 Labo products",
+      "search_placeholder": "Search (name, SKU, EAN)…",
+      "export_excel": "Export Excel",
+      "import_link": "Import products",
+
+      "table": {
+        "id": "ID",
+        "sku": "SKU",
+        "name": "Name",
+        "price_ht": "Price excl. VAT",
+        "stock": "Stock",
+        "variants": "Variants",
+        "active": "Active",
+        "tiers": "Tiered price"
+      },
+
+      "empty": "No products yet.",
+
+      "tiers_modal": {
+        "title": "Tiered prices",
+        "min_qty": "Min Qty",
+        "price_ht": "Price excl. VAT",
+        "actions": "Actions",
+        "no_tiers": "No tiers.",
+        "form_min_qty": "Min qty",
+        "form_price_ht": "Price excl. VAT",
+        "form_submit": "Save"
+      }
+    },
+
+    "import_products": {
+      "title": "Import products",
+      "back": "← Back to products",
+
+      "format_title": "📘 Expected Excel file format (XLSX)",
+      "format_desc": "Each row represents a product. If a product with the same SKU already exists, it will be updated.",
+
+      "mandatory_columns": "Mandatory columns",
+      "optional_columns": "Optional columns",
+
+      "columns": {
+        "sku": "Unique product identifier",
+        "name": "Product name",
+        "price_ht": "Price excl. VAT (ex: 12.50)",
+        "stock": "Available stock (integer)",
+        "image_url": "HTTP(s) URL of the product image",
+        "vat_rate": "VAT rate (0 to 100 — ex: 20, 5.5, 0)",
+        "description": "Product description",
+        "ean13": "Barcode (13 digits)",
+        "is_active": "1 = active, 0 = inactive",
+        "tier_min_qty": "Minimum quantity for a tier",
+        "tier_price_ht": "Price excl. VAT for the tier"
+      },
+
+      "rules": {
+        "img_dl": "✔ Image will be downloaded automatically.",
+        "update_existing": "✔ Existing products (same SKU) will be updated.",
+        "update_tiers": "✔ Tiered prices will be updated."
+      },
+
+      "download_template": "⬇ Download sample Excel template",
+
+      "form": {
+        "label": "Excel file (.xlsx)",
+        "submit": "Import"
+      },
+
+      "result": {
+        "title": "Import summary",
+        "created": "Products created",
+        "updated": "Products updated",
+        "errors": "Errors",
+        "no_errors": "No errors."
+      }
+    }
+  },
+
+  "agent": {
+    "dashboard": {
+      "title": "🏷️ Agent Dashboard",
+      "breadcrumb": "Agent / Dashboard",
+      "welcome_title": "Welcome",
+      "welcome_desc": "Use the sidebar to navigate.",
+      "kpis": {
+        "orders": "Orders (30 days)",
+        "clients": "Active clients",
+        "sales": "Estimated turnover excl. VAT"
+      },
+      "quick_labo": "Quick labo selection",
+      "all_labos": "All labos"
+    },
+
+    "clients": {
+      "title": "👥 My clients",
+      "breadcrumb": "Agent / My clients",
+      "subtitle": "Paginated list of your linked clients.",
+
+      "search_label": "Search client",
+      "search_placeholder": "Name, city, postal code",
+
+      "table": {
+        "name": "Name",
+        "city": "City",
+        "zip": "Postal code",
+        "phone": "Phone"
+      }
+    },
+
+    "orders": {
+      "title": "📄 My orders",
+      "breadcrumb": "Agent / My orders",
+
+      "filters": {
+        "labo": "Labo",
+        "all_labos": "All labos",
+        "status": "Status",
+        "all": "All",
+        "pending": "Pending",
+        "completed": "Completed",
+        "canceled": "Canceled",
+        "period": "Period",
+        "month": "Current month",
+        "30d": "30 days",
+        "custom": "Custom",
+        "from": "From",
+        "to": "To",
+        "search": "Search",
+        "search_placeholder": "Client / Labo / Document #"
+      }
+    },
+
+    "catalog": {
+      "title": "My labos",
+      "labo_label": "Labo",
+      "search": "Search (name, SKU, EAN)",
+      "sku": "SKU",
+      "ean": "EAN",
+      "name": "Name",
+      "price": "Price excl. VAT",
+      "stock": "Stock",
+      "active": "Active",
+      "empty": "No products found.",
+      "loading": "Loading…",
+      "export_csv": "Export CSV"
+    },
+
+    "create_order": {
+      "title": "Create order",
+      "client": {
+        "title": "Client",
+        "search_placeholder": "Search (name / code / postal code / city)"
+      },
+      "labo": {
+        "title": "Labo"
+      },
+      "catalog": {
+        "title": "Products catalog",
+        "search_placeholder": "Search a product (name, SKU, EAN)",
+        "loading": "Loading…"
+      },
+      "cart": {
+        "title": "Cart",
+        "total_ht": "Total excl. VAT",
+        "submit": "Submit order",
+        "error": "An error occurred.",
+        "success": "Order submitted successfully."
+      }
+    },
+
+    "actions": "Actions",
+
+    "agenda": {
+      "title": "Appointments agenda",
+      "newAppointment": "New appointment",
+      "period": "Period",
+      "week": "Coming week",
+      "month": "Month",
+      "startDate": "From",
+      "listTitle": "Appointments",
+      "date": "Date",
+      "client": "Client",
+      "notes": "Notes",
+      "status": "Status",
+      "noAppointments": "No appointments for this period.",
+      "searchClient": "Search a client...",
+      "startAt": "Start time",
+      "endAt": "End time",
+      "statusLabels": {
+        "planned": "Planned",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
+      "messages": {
+        "loadError": "Error while loading appointments.",
+        "createSuccess": "Appointment created successfully.",
+        "updateSuccess": "Appointment updated successfully.",
+        "deleteConfirm": "Delete this appointment?",
+        "deleteSuccess": "Appointment deleted."
+      }
+    },
+
+    "client_detail": {
+      "title": "Client details",
+      "breadcrumb": "Agent / Client details",
+
+      "tabs": {
+        "info": "Client info",
+        "bank": "Bank information",
+        "orders": "Orders",
+        "revenue": "Turnover",
+        "products": "Top products",
+        "appointments": "Appointments"
+      },
+
+      "bank_info": {
+        "title": "Bank information",
+        "save": "Save",
+        "note": "This information is for reference only and has no contractual value."
+      },
+
+      "orders": {
+        "title": "Latest orders",
+        "table": {
+          "number": "No.",
+          "date": "Date",
+          "status": "Status",
+          "total_ht": "Total excl. VAT",
+          "actions": "Actions"
+        },
+        "empty": "No orders found."
+      },
+
+      "revenue": {
+        "title": "Turnover",
+        "period_label": "Period",
+        "total_label": "Total turnover for the period"
+      },
+
+      "products": {
+        "title": "Top products",
+        "table": {
+          "name": "Product",
+          "sku": "Reference",
+          "qty": "Quantity",
+          "total_ht": "Turnover excl. VAT"
+        },
+        "empty": "No products for this period."
+      },
+
+      "appointments": {
+        "title": "Appointments history",
+        "table": {
+          "date": "Date",
+          "notes": "Notes",
+          "status": "Status",
+          "agent": "Agent"
+        },
+        "empty": "No appointments."
+      }
+    }
+  }
+}

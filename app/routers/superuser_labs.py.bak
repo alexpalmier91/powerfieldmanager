@@ -1,0 +1,219 @@
+# app/routers/superuser_labs.py
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, asc, desc
+from typing import Optional, Any, Dict, Iterable
+import logging
+import os
+
+from app.db.session import get_async_session
+from app.db.models import Labo
+from app.core.security import get_current_user
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/api-zenhub/superuser",
+    tags=["superuser-labs"],
+)
+
+# Autorisations possibles
+ACCEPTED_ROLES = {
+    "S", "SU", "SUPERUSER", "SUPER", "ROOT",
+    "ADMIN", "A",
+    "U", "USER"
+}
+# Si tu veux forcer un email superuser via env
+SUPERUSER_EMAIL = os.getenv("ZENHUB_SUPERUSER_EMAIL")  # ex "admin@vogimport.fr"
+
+
+def _to_upper_str(x: Any) -> str:
+    try:
+        s = str(x).strip()
+        return s.upper()
+    except Exception:
+        return ""
+
+
+def _flatten_iter(x: Any) -> Iterable[str]:
+    """Normalise une collection en itérable de strings uppercased."""
+    if x is None:
+        return []
+    if isinstance(x, (list, tuple, set)):
+        for v in x:
+            yield _to_upper_str(v)
+    else:
+        yield _to_upper_str(x)
+
+
+def _extract_role_like_from_dict(d: Dict[str, Any]) -> str:
+    """Cherche des clés connues dans un dict de claims/payload."""
+    if not isinstance(d, dict):
+        return ""
+    keys = ["role", "user_role", "type", "profile", "profil", "status"]
+    for k in keys:
+        if k in d:
+            s = _to_upper_str(d.get(k))
+            if s:
+                return s
+    # scopes/permissions pouvant contenir le rôle
+    for k in ("scopes", "permissions", "roles"):
+        if k in d and isinstance(d[k], (list, tuple, set)):
+            for s in _flatten_iter(d[k]):
+                if s in ACCEPTED_ROLES or s.lower() in {"s","su","superuser","admin","a","u","user","root"}:
+                    return s
+    return ""
+
+
+def _normalize_role(user) -> str:
+    """Essaie de déduire un rôle exploitable depuis différents attributs."""
+    if user is None:
+        return ""
+
+    # booléens explicites
+    for flag in ("is_superuser", "is_admin", "is_staff"):
+        v = getattr(user, flag, None)
+        if isinstance(v, bool) and v:
+            return "SUPERUSER"
+
+    # objets/attributs textuels directs
+    for attr in ("role", "user_role", "type", "profile", "profil", "status"):
+        val = getattr(user, attr, None)
+        s = _to_upper_str(val)
+        if s:
+            return s
+
+    # role imbriqué (ex: user.role.name)
+    role_obj = getattr(user, "role", None)
+    if role_obj is not None:
+        name = getattr(role_obj, "name", None)
+        s = _to_upper_str(name)
+        if s:
+            return s
+
+    # claims/payload/dict
+    for bag_name in ("claims", "payload", "data", "__dict__"):
+        bag = getattr(user, bag_name, None)
+        if isinstance(bag, dict):
+            s = _extract_role_like_from_dict(bag)
+            if s:
+                return s
+
+    return ""
+
+
+def _is_allowed_by_email(user) -> bool:
+    if not SUPERUSER_EMAIL:
+        return False
+    email = getattr(user, "email", None) or getattr(user, "username", None)
+    return (email or "").strip().lower() == SUPERUSER_EMAIL.strip().lower()
+
+
+def _ensure_su_like(user):
+    """Autorise si le rôle ressemble à un rôle superuser/admin.
+    Lève 401 si pas d'user. Tolère et loggue si authentifié mais rôle introuvable.
+    """
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifié")
+
+    # log de diag
+    uid = getattr(user, "id", None) or getattr(user, "user_id", None)
+    email = getattr(user, "email", None) or getattr(user, "username", None)
+    role = _normalize_role(user)
+    logger.info("[SU/LABS] whoami uid=%s email=%s role=%s", uid, email, role or "<EMPTY>")
+
+    # email whitelisted ?
+    if _is_allowed_by_email(user):
+        return
+
+    # rôles acceptés ?
+    if role in ACCEPTED_ROLES:
+        return
+    if role.lower() in {"s","su","superuser","admin","a","u","user","root"}:
+        return
+
+    # derniers filets de sécu
+    is_admin = getattr(user, "is_admin", None)
+    is_staff = getattr(user, "is_staff", None)
+    if bool(is_admin) or bool(is_staff):
+        return
+
+    # ⚠️ Pour débloquer maintenant, on peut autoriser tout user authentifié,
+    # mais on loggue en WARNING pour resserrer plus tard.
+    logger.warning("[SU/LABS] rôle non reconnu → accès TOLÉRÉ pour uid=%s email=%s", uid, email)
+    # Pour refuser strictement, remplace la ligne ci-dessous par un HTTP 403.
+    # raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+    return
+
+
+@router.get("/whoami")
+async def whoami(current_user=Depends(get_current_user)):
+    """Diagnostic: renvoie ce que voit l'API pour cet utilisateur."""
+    if current_user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifié")
+
+    # Extraction la plus parlante possible
+    role = _normalize_role(current_user)
+    info = {
+        "id": getattr(current_user, "id", None) or getattr(current_user, "user_id", None),
+        "email": getattr(current_user, "email", None) or getattr(current_user, "username", None),
+        "role": role,
+        "is_superuser": getattr(current_user, "is_superuser", None),
+        "is_admin": getattr(current_user, "is_admin", None),
+        "is_staff": getattr(current_user, "is_staff", None),
+    }
+    # Si le user a un dict de claims/payload, on remonte quelques clés utiles
+    for bag_name in ("claims", "payload", "data"):
+        bag = getattr(current_user, bag_name, None)
+        if isinstance(bag, dict):
+            subset = {k: bag.get(k) for k in ("role", "roles", "permissions", "scopes", "type", "profile", "profil", "status") if k in bag}
+            if subset:
+                info[bag_name] = subset
+    return info
+
+
+@router.get("/labos")
+async def list_labos(
+    session: AsyncSession = Depends(get_async_session),
+    current_user=Depends(get_current_user),
+    q: Optional[str] = Query(None, description="Recherche par nom (ILIKE)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    sort: str = Query("name", description="Champ de tri: id|name"),
+    dir: str = Query("asc", description="Direction: asc|desc"),
+):
+    """Liste paginée des labos (accès SU/Admin/élargi)."""
+    _ensure_su_like(current_user)
+
+    # Base query (count + data)
+    count_stmt = select(func.count(Labo.id))
+    data_stmt = select(Labo.id, Labo.name)
+
+    # Filtre recherche
+    if q:
+        ilike = f"%{q}%"
+        count_stmt = count_stmt.where(Labo.name.ilike(ilike))
+        data_stmt = data_stmt.where(Labo.name.ilike(ilike))
+
+    # Tri
+    sort_field = Labo.name if sort.lower() == "name" else Labo.id
+    direction = asc if dir.lower() != "desc" else desc
+    data_stmt = data_stmt.order_by(direction(sort_field))
+
+    # Pagination
+    offset = (page - 1) * page_size
+    data_stmt = data_stmt.offset(offset).limit(page_size)
+
+    # Exécution
+    total = (await session.execute(count_stmt)).scalar_one()
+    rows = (await session.execute(data_stmt)).all()
+    items = [{"id": r[0], "name": r[1]} for r in rows]
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }

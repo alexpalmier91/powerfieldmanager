@@ -1,0 +1,113 @@
+{# app/templates/superuser/labo_stock_sync.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Automatisation stock labos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3">Automatisation de la mise à jour du stock par labo</h1>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <strong>Choisissez un laboratoire</strong>
+    </div>
+    <div class="card-body">
+      <select id="labo-select" class="form-select">
+        <option value="">-- Sélectionnez un labo --</option>
+        {% for labo in labos %}
+          <option value="{{ labo.id }}">{{ labo.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div id="stock-sync-form-wrap" class="card" style="display:none;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Configuration de la synchro stock</strong>
+        <span id="selected-labo-name" class="text-muted ms-2"></span>
+      </div>
+      <span id="stock-sync-status" class="badge bg-secondary"></span>
+    </div>
+
+    <div class="card-body">
+      <form id="stock-sync-form">
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="enabled">
+          <label class="form-check-label" for="enabled">
+            Activer la mise à jour automatique du stock pour ce labo
+          </label>
+        </div>
+
+        <div class="mb-3">
+          <label for="api_url" class="form-label">URL API stock du labo</label>
+          <input type="text" class="form-control" id="api_url" placeholder="https://api.labo.com/stock">
+        </div>
+
+        <div class="mb-3">
+          <label for="api_token" class="form-label">API Token / Auth</label>
+          <input type="text" class="form-control" id="api_token" placeholder="Bearer token ou autre">
+          <div class="form-text">
+            Utilisé comme en-tête <code>Authorization: Bearer &lt;token&gt;</code>.
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="sku_field" class="form-label">Champ code article (SKU) dans l'API</label>
+            <input type="text" class="form-control" id="sku_field" value="sku">
+          </div>
+          <div class="col-md-4">
+            <label for="qty_field" class="form-label">Champ stock (qty) dans l'API</label>
+            <input type="text" class="form-control" id="qty_field" value="qty">
+          </div>
+          <div class="col-md-4">
+            <label for="run_at" class="form-label">Heure de mise à jour quotidienne (HH:MM)</label>
+            <input type="time" class="form-control" id="run_at">
+            <div class="form-text">
+              Pour l'instant, la tâche tourne une fois par nuit. Ce champ est anticipé pour plus tard.
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:8px;">
+          <button type="button" id="btn-save-config" class="btn btn-primary btn-sm">
+            💾 Enregistrer la configuration
+          </button>
+
+          <button type="button" id="btn-test-connection" class="btn btn-outline-secondary btn-sm" disabled>
+            🔌 Tester la connexion
+          </button>
+
+          <button type="button" id="btn-run-now" class="btn btn-warning btn-sm" disabled>
+            🔁 Mettre à jour le stock maintenant
+          </button>
+
+          <span id="stock-sync-loader" style="display:none;" class="ms-2">
+            ⏳ Traitement en cours...
+          </span>
+        </div>
+
+        <div id="stock-sync-result" class="small text-muted mb-3"></div>
+
+        <div class="mb-3">
+          <label class="form-label">Dernière exécution</label>
+          <div id="last-run-info" class="small text-muted">
+            Aucune exécution pour le moment.
+          </div>
+        </div>
+
+        <div id="test-result" class="mt-3" style="display:none;">
+          <h5>Résultat du test</h5>
+          <pre id="test-result-json" class="bg-light p-2 rounded" style="max-height:250px; overflow:auto;"></pre>
+        </div>
+
+        <div id="stock-sync-error" class="alert alert-danger mt-3" style="display:none;"></div>
+        <div id="stock-sync-success" class="alert alert-success mt-3" style="display:none;"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/static/superuser/labo_stock_sync.js"></script>
+{% endblock %}

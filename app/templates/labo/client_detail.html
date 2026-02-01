@@ -1,0 +1,141 @@
+{# app/templates/labo/client_detail.html #}
+{% extends "_layouts/app.html" %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="/static/labo/client.css">
+{% endblock %}
+
+{% block content %}
+<div
+  class="container-fluid"
+  id="labo-client-detail-page"
+  data-client-id="{{ client_id }}"
+>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>
+      <span data-i18n="labo.client_detail.title">Fiche client</span>
+      <small class="text-muted" data-i18n="labo.client_detail.subtitle">
+        Détails et historique du client
+      </small>
+    </h1>
+  </div>
+
+  {# Bloc informations client #}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h2 class="h5 mb-3" data-i18n="labo.client_detail.info.title">
+        Informations client
+      </h2>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-2">
+            <div class="client-info-label" data-i18n="labo.client_detail.info.company">
+              Raison sociale
+            </div>
+            <div class="client-info-value" id="client-company-name">
+              <!-- rempli par JS -->
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="client-info-label" data-i18n="labo.client_detail.info.code">
+              Code client labo
+            </div>
+            <div class="client-info-value" id="client-code">
+              <!-- rempli par JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="mb-2">
+            <div class="client-info-label" data-i18n="labo.client_detail.info.address">
+              Adresse
+            </div>
+            <div class="client-info-value" id="client-address">
+              <!-- rempli par JS -->
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="client-info-label" data-i18n="labo.client_detail.info.zip_city">
+              Code postal / Ville
+            </div>
+            <div class="client-info-value" id="client-zip-city">
+              <!-- rempli par JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Commandes reçues des agents #}
+  <div class="card mb-3">
+    <div class="card-body table-responsive">
+      <h2 class="h5 mb-3" data-i18n="labo.client_detail.orders.title">
+        Commandes reçues des agents
+      </h2>
+
+      <table class="table table-striped align-middle" id="client-orders-table">
+        <thead>
+          <tr>
+            <th data-i18n="labo.client_detail.orders.col_number">N° commande</th>
+            <th data-i18n="labo.client_detail.orders.col_order_date">Date commande</th>
+            <th data-i18n="labo.client_detail.orders.col_delivery_date">Date livraison</th>
+            <th data-i18n="labo.client_detail.orders.col_agent">Agent</th>
+            <th data-i18n="labo.client_detail.orders.col_status">Statut</th>
+            <th class="text-end" data-i18n="labo.client_detail.orders.col_total_ht">Total HT</th>
+          </tr>
+        </thead>
+        <tbody id="client-orders-tbody">
+          {# rempli par JS #}
+        </tbody>
+      </table>
+
+      <div id="client-orders-empty" class="text-center py-3 d-none">
+        <span data-i18n="labo.client_detail.orders.empty">
+          Aucune commande trouvée pour ce client.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {# Documents labo #}
+  <div class="card mb-3">
+    <div class="card-body table-responsive">
+      <h2 class="h5 mb-3" data-i18n="labo.client_detail.documents.title">
+        Documents labo (factures / BC / avoirs)
+      </h2>
+
+      <table class="table table-striped align-middle" id="client-documents-table">
+        <thead>
+          <tr>
+            <th data-i18n="labo.client_detail.documents.col_number">N° document</th>
+            <th data-i18n="labo.client_detail.documents.col_type">Type</th>
+            <th data-i18n="labo.client_detail.documents.col_order_date">Date document</th>
+            <th data-i18n="labo.client_detail.documents.col_delivery_date">Date livraison</th>
+            <th class="text-end" data-i18n="labo.client_detail.documents.col_total_ht">Total HT</th>
+          </tr>
+        </thead>
+        <tbody id="client-documents-tbody">
+          {# rempli par JS #}
+        </tbody>
+      </table>
+
+      <div id="client-documents-empty" class="text-center py-3 d-none">
+        <span data-i18n="labo.client_detail.documents.empty">
+          Aucun document trouvé pour ce client.
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="/static/labo/pages/client_detail.js"></script>
+{% endblock %}

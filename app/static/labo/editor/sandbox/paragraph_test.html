@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sandbox – Paragraph WYSIWYG</title>
+
+  <style>
+    /* =========================================================
+       ✅ CUSTOM FONTS (TTF) – test sandbox
+       Assumes FastAPI mounts app/assets => /assets
+       Fonts live: /assets/fonts_global/*.ttf
+       ========================================================= */
+
+    @font-face{
+      font-family:"GLOBAL_FONT_Pacifico";
+      src:url("/assets/fonts_global/Pacifico-Regular.ttf") format("truetype");
+      font-display:swap;
+      font-weight:400;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_Oswald";
+      src:url("/assets/fonts_global/Oswald-VariableFont_wght.ttf") format("truetype");
+      font-display:swap;
+      font-weight:100 900;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_Roboto";
+      src:url("/assets/fonts_global/Roboto-VariableFont_wdth,wght.ttf") format("truetype");
+      font-display:swap;
+      font-weight:100 900;
+      font-style:normal;
+    }
+    @font-face{
+      font-family:"GLOBAL_FONT_PermanentMarker";
+      src:url("/assets/fonts_global/PermanentMarker-Regular.ttf") format("truetype");
+      font-display:swap;
+      font-weight:400;
+      font-style:normal;
+    }
+
+    /* =========================================================
+       ✅ Quill font mapping: .ql-font-<value> => font-family
+       (Quill applique une classe, pas un style inline direct)
+       ========================================================= */
+    .ql-font-helv{
+      font-family: Helvetica, Arial, sans-serif !important;
+    }
+    .ql-font-GLOBAL_FONT_Pacifico{
+      font-family:"GLOBAL_FONT_Pacifico", Helvetica, Arial, sans-serif !important;
+    }
+    .ql-font-GLOBAL_FONT_Oswald{
+      font-family:"GLOBAL_FONT_Oswald", Helvetica, Arial, sans-serif !important;
+    }
+    .ql-font-GLOBAL_FONT_Roboto{
+      font-family:"GLOBAL_FONT_Roboto", Helvetica, Arial, sans-serif !important;
+    }
+    .ql-font-GLOBAL_FONT_PermanentMarker{
+      font-family:"GLOBAL_FONT_PermanentMarker", Helvetica, Arial, sans-serif !important;
+    }
+
+    /* =========================================================
+       ✅ Existing styles
+       ========================================================= */
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:#f3f4f6;
+    }
+    .topbar{
+      position:sticky;
+      top:0;
+      background:#111827;
+      color:#fff;
+      padding:10px 14px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      z-index:10;
+    }
+    .topbar button{
+      height:34px;
+      padding:0 12px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+    }
+    .wrap{
+      display:flex;
+      gap:14px;
+      padding:14px;
+    }
+    .page{
+      position:relative;
+      width:860px;
+      height:1180px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.10);
+      margin:0 auto;
+      overflow:hidden;
+    }
+    .page-overlay{
+      position:absolute;
+      inset:0;
+    }
+
+    /* bloc anno */
+    .anno-object{
+      position:absolute;
+      border:1px dashed rgba(17,24,39,.25);
+      border-radius:10px;
+      background:rgba(255,255,255,.6);
+      box-sizing:border-box;
+    }
+    .anno-object.is-editing{
+      border-color: rgba(59,130,246,.55);
+      box-shadow: 0 0 0 2px rgba(59,130,246,.18);
+      background:#fff;
+    }
+    .zh-drag-handle{
+      position:absolute;
+      left:8px;
+      top:8px;
+      width:22px;
+      height:22px;
+      border-radius:8px;
+      background:rgba(17,24,39,.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:grab;
+      user-select:none;
+      font-weight:700;
+      color:#111827;
+    }
+
+    .zh-text-content[data-role="richtext"]{
+      position:absolute;
+      inset:10px 10px 10px 40px;
+      outline:none;
+      overflow:hidden;
+      cursor:text;
+      user-select:text;
+      white-space:normal;
+    }
+
+    /* resize handle */
+    .zh-resize-handle{
+      position:absolute;
+      right:6px;
+      bottom:6px;
+      width:16px;
+      height:16px;
+      border-radius:6px;
+      background:rgba(17,24,39,.15);
+      cursor:nwse-resize;
+    }
+
+    /* panneau debug */
+    .debug{
+      width:420px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08);
+      padding:12px;
+      height:1180px;
+      overflow:auto;
+    }
+    .debug h3{ margin:6px 0 10px; }
+    textarea{
+      width:100%;
+      height:380px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:10px;
+      padding:10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      box-sizing:border-box;
+    }
+    pre{
+      margin:10px 0 0;
+      padding:10px;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      overflow:auto;
+      font-size:12px;
+    }
+    .hint{ color:#6b7280; font-size:12px; margin-top:8px; }
+
+    .anno-object.is-editing .zh-drag-handle,
+    .anno-object.is-editing .zh-resize-handle{
+      user-select: none;
+    }
+
+    .zh-rtb-temp-sel{
+      background: rgba(59,130,246,.18);
+      border-radius: 4px;
+      box-shadow: 0 0 0 1px rgba(59,130,246,.25) inset;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div style="font-weight:700">Sandbox Paragraph</div>
+    <button id="btnAdd">Ajouter paragraphe</button>
+    <button id="btnDump">Dump obj</button>
+    <span style="opacity:.8">Clic bloc = édition / Drag via poignée / Resize via coin</span>
+  </div>
+
+  <div class="wrap">
+    <div class="page">
+      <div class="page-overlay" id="overlay"></div>
+    </div>
+
+    <div class="debug">
+      <h3>obj.html (sanitizé) + obj.text</h3>
+      <textarea id="outHtml" readonly></textarea>
+      <pre id="outJson"></pre>
+      <div class="hint">
+        Astuces : clique ailleurs pour commit. ESC pour quitter. La toolbar suit le bloc.
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ParagraphEditor } from "../paragraph_toolbar.js?v=12";
+
+    // -----------------------------
+    // ✅ Fonts (Quill whitelist + labels)
+    // - value must match .ql-font-<value>
+    // - label is what user sees
+    // -----------------------------
+    const PARAGRAPH_FONTS = [
+      { value: "helv", label: "Helvetica (défaut)" },
+      { value: "GLOBAL_FONT_Pacifico", label: "Pacifico" },
+      { value: "GLOBAL_FONT_Oswald", label: "Oswald" },
+      { value: "GLOBAL_FONT_Roboto", label: "Roboto" },
+      { value: "GLOBAL_FONT_PermanentMarker", label: "Permanent Marker" },
+    ];
+
+    // ✅ Preview CSS for Quill font dropdown (works if your toolbar uses Quill picker)
+    function ensureQuillFontPreviewCss(fonts) {
+      const STYLE_ID = "zh-quill-font-preview-css";
+      let tag = document.getElementById(STYLE_ID);
+      if (!tag) {
+        tag = document.createElement("style");
+        tag.id = STYLE_ID;
+        document.head.appendChild(tag);
+      }
+
+      const escAttr = (v) => {
+        if (window.CSS && typeof CSS.escape === "function") return CSS.escape(v);
+        return String(v || "").replace(/["\\]/g, "\\$&");
+      };
+
+      const rules = [];
+      rules.push(`
+.ql-snow .ql-toolbar .ql-font .ql-picker-label,
+.ql-snow .ql-toolbar .ql-font .ql-picker-item{
+  font-family: Helvetica, Arial, sans-serif;
+}
+`);
+
+      for (const f of (fonts || [])) {
+        const v = String(f?.value || "").trim();
+        if (!v || v === "helv") continue;
+        const a = escAttr(v);
+        rules.push(`
+.ql-snow .ql-toolbar .ql-font .ql-picker-item[data-value="${a}"],
+.ql-snow .ql-toolbar .ql-font .ql-picker-label[data-value="${a}"]{
+  font-family: "${v}", Helvetica, Arial, sans-serif !important;
+}
+`);
+      }
+
+      rules.push(`
+.ql-snow .ql-toolbar .ql-font .ql-picker-options{
+  max-height: 280px;
+  overflow: auto;
+}
+`);
+      tag.textContent = rules.join("\n");
+    }
+
+    // ✅ NEW: preview for the *native* <select> "Police" used by your custom toolbar
+    // - styles option items when allowed by browser/OS
+    // - always styles the select (closed) with the selected font
+    // - auto-wires dynamically injected toolbars (MutationObserver)
+    function ensureNativeFontSelectPreview(fonts) {
+      const STYLE_ID = "zh-native-fontselect-preview-css";
+      let tag = document.getElementById(STYLE_ID);
+      if (!tag) {
+        tag = document.createElement("style");
+        tag.id = STYLE_ID;
+        document.head.appendChild(tag);
+      }
+
+      const escAttr = (v) => {
+        if (window.CSS && typeof CSS.escape === "function") return CSS.escape(v);
+        return String(v || "").replace(/["\\]/g, "\\$&");
+      };
+
+      const rules = [];
+
+      // Options preview (best-effort; some OS ignore option styling)
+      for (const f of (fonts || [])) {
+        const v = String(f?.value || "").trim();
+        if (!v || v === "helv") continue;
+        const a = escAttr(v);
+        rules.push(`select option[value="${a}"]{ font-family:"${v}", Helvetica, Arial, sans-serif !important; }`);
+      }
+
+      tag.textContent = rules.join("\n");
+
+      function applySelectFont(selectEl) {
+        if (!selectEl) return;
+        const val = String(selectEl.value || "");
+        if (!val || val === "helv") {
+          selectEl.style.fontFamily = "Helvetica, Arial, sans-serif";
+        } else {
+          selectEl.style.fontFamily = `"${val}", Helvetica, Arial, sans-serif`;
+        }
+      }
+
+      function wireSelect(selectEl) {
+        if (!selectEl || selectEl.__zhFontWired) return;
+        selectEl.__zhFontWired = true;
+        applySelectFont(selectEl);
+        selectEl.addEventListener("change", () => applySelectFont(selectEl));
+      }
+
+      function isFontSelect(selectEl) {
+        if (!selectEl) return false;
+        // must contain at least one of our font values as option
+        for (const f of (fonts || [])) {
+          const v = String(f?.value || "").trim();
+          if (!v) continue;
+          if (selectEl.querySelector(`option[value="${escAttr(v)}"]`)) return true;
+        }
+        return false;
+      }
+
+      function tryWireAll() {
+        const selects = Array.from(document.querySelectorAll("select"));
+        for (const sel of selects) {
+          if (isFontSelect(sel)) wireSelect(sel);
+        }
+      }
+
+      tryWireAll();
+
+      const mo = new MutationObserver(() => tryWireAll());
+      mo.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // ✅ call BEFORE toolbar usage
+    ensureQuillFontPreviewCss(PARAGRAPH_FONTS);
+    ensureNativeFontSelectPreview(PARAGRAPH_FONTS);
+
+    // petit preload (évite le flash au 1er usage)
+    async function preloadFonts() {
+      if (!document.fonts || !document.fonts.load) return;
+      try {
+        await Promise.all([
+          document.fonts.load('16px "GLOBAL_FONT_Pacifico"'),
+          document.fonts.load('16px "GLOBAL_FONT_Oswald"'),
+          document.fonts.load('16px "GLOBAL_FONT_Roboto"'),
+          document.fonts.load('16px "GLOBAL_FONT_PermanentMarker"'),
+        ]);
+      } catch {}
+    }
+    preloadFonts();
+
+    // -----------------------------
+    // Draft mock
+    // -----------------------------
+    const draft = { pages: [ { objects: [] } ] };
+    const pageIndex = 0;
+
+    function uid() {
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+
+    function getObject(pi, id) {
+      return draft.pages[pi].objects.find(o => String(o.id) === String(id));
+    }
+
+    // sanitize minimal (remplace par ton sanitizeRichHtml plus tard)
+    function sanitize(html) {
+      html = String(html || "");
+      html = html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+      html = html.replace(/\son\w+="[^"]*"/gi, "");
+      html = html.replace(/\son\w+='[^']*'/gi, "");
+      return html;
+    }
+
+    function onDirty() {
+      refreshDebug();
+    }
+
+    function setEditingState(isEditing, objectId) {
+      // sandbox: rien de spécial
+    }
+
+    ParagraphEditor.configure({
+      getObject,
+      sanitize,
+      onDirty,
+      setEditingState,
+      getOverlayFromEl: (blockEl) => blockEl.closest(".page-overlay"),
+      fonts: PARAGRAPH_FONTS,
+      defaultFont: "helv",
+    });
+
+    // -----------------------------
+    // Render
+    // -----------------------------
+    const overlay = document.getElementById("overlay");
+
+    function render() {
+      overlay.innerHTML = "";
+      for (const obj of draft.pages[pageIndex].objects) {
+        const el = document.createElement("div");
+        el.className = "anno-object";
+        el.dataset.type = obj.type;
+        el.dataset.objid = obj.id;
+        el.dataset.pageindex = String(pageIndex);
+        el.style.left = obj.x + "px";
+        el.style.top = obj.y + "px";
+        el.style.width = obj.w + "px";
+        el.style.height = obj.h + "px";
+
+        const handle = document.createElement("div");
+        handle.className = "zh-drag-handle";
+        handle.textContent = "⠿";
+        el.appendChild(handle);
+
+        const content = document.createElement("div");
+        content.className = "zh-text-content";
+        content.setAttribute("data-role", "richtext");
+        content.setAttribute("spellcheck", "false");
+        content.contentEditable = "false";
+        content.innerHTML = obj.html || "<div>Écris ici…</div>";
+
+        if (obj.style?.lineHeight) content.style.lineHeight = obj.style.lineHeight;
+        el.appendChild(content);
+
+        const resize = document.createElement("div");
+        resize.className = "zh-resize-handle";
+        el.appendChild(resize);
+
+        overlay.appendChild(el);
+      }
+    }
+
+    // -----------------------------
+    // Interactions minimal (drag/resize + édition)
+    // -----------------------------
+    let action = null;
+
+    function pickObjEl(target) {
+      return target.closest(".anno-object");
+    }
+
+    overlay.addEventListener("pointerdown", (e) => {
+      const objEl = pickObjEl(e.target);
+      if (!objEl) return;
+
+      const type = objEl.dataset.type;
+      if (type !== "text_paragraph") return;
+
+      const isHandle = !!e.target.closest(".zh-drag-handle");
+      const isResize = !!e.target.closest(".zh-resize-handle");
+
+      if (!isHandle && !isResize) {
+        if (ParagraphEditor.maybeHandlePointerDown(e)) return;
+      }
+
+      objEl.setPointerCapture(e.pointerId);
+
+      const objectId = objEl.dataset.objid;
+      const obj = getObject(pageIndex, objectId);
+
+      action = {
+        kind: isResize ? "resize" : "drag",
+        objectId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startLeft: parseFloat(objEl.style.left),
+        startTop: parseFloat(objEl.style.top),
+        startW: parseFloat(objEl.style.width),
+        startH: parseFloat(objEl.style.height),
+      };
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    overlay.addEventListener("pointermove", (e) => {
+      if (!action) return;
+      const obj = getObject(pageIndex, action.objectId);
+      const objEl = overlay.querySelector(`.anno-object[data-objid="${action.objectId}"]`);
+      if (!obj || !objEl) return;
+
+      const dx = e.clientX - action.startX;
+      const dy = e.clientY - action.startY;
+
+      if (action.kind === "drag") {
+        obj.x = Math.max(0, action.startLeft + dx);
+        obj.y = Math.max(0, action.startTop + dy);
+        objEl.style.left = obj.x + "px";
+        objEl.style.top = obj.y + "px";
+      } else {
+        obj.w = Math.max(120, action.startW + dx);
+        obj.h = Math.max(60, action.startH + dy);
+        objEl.style.width = obj.w + "px";
+        objEl.style.height = obj.h + "px";
+      }
+
+      ParagraphEditor.onMoveOrResize();
+    });
+
+    overlay.addEventListener("pointerup", () => {
+      if (!action) return;
+      action = null;
+      ParagraphEditor.onMoveOrResize();
+      refreshDebug();
+    });
+
+    // -----------------------------
+    // UI
+    // -----------------------------
+    document.getElementById("btnAdd").addEventListener("click", () => {
+      const obj = {
+        id: uid(),
+        type: "text_paragraph",
+        x: 80,
+        y: 120,
+        w: 360,
+        h: 140,
+        html: "<div>Écris ici…</div>",
+        text: "Écris ici…",
+      };
+      draft.pages[pageIndex].objects.push(obj);
+      render();
+
+      requestAnimationFrame(() => {
+        const el = overlay.querySelector(`.anno-object[data-objid="${obj.id}"]`);
+        ParagraphEditor.enter({ pageIndex, objectId: obj.id, obj, el });
+        refreshDebug();
+      });
+    });
+
+    document.getElementById("btnDump").addEventListener("click", () => {
+      refreshDebug(true);
+    });
+
+    function refreshDebug(force=false) {
+      const first = draft.pages[pageIndex].objects[0];
+      const outHtml = document.getElementById("outHtml");
+      const outJson = document.getElementById("outJson");
+
+      if (!first) {
+        outHtml.value = "";
+        outJson.textContent = "(aucun objet)";
+        return;
+      }
+      outHtml.value = first.html || "";
+      outJson.textContent = JSON.stringify(first, null, 2);
+
+      if (force) console.log("OBJ:", first);
+    }
+
+    // init
+    draft.pages[pageIndex].objects.push({
+      id: "p1",
+      type: "text_paragraph",
+      x: 80,
+      y: 120,
+      w: 420,
+      h: 160,
+      html: '<div class="ql-font-GLOBAL_FONT_Pacifico"><b>Bonjour</b> — Pacifico</div><div>Teste <i>italique</i>, <u>souligné</u>, alignement, tailles.</div>',
+      text: "Bonjour — teste italique, souligné et alignement.",
+    });
+    render();
+    refreshDebug();
+  </script>
+</body>
+</html>

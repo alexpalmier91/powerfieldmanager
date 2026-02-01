@@ -1,0 +1,82 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}{{ _("agent.orders.title") }}{% endblock %}
+{% block breadcrumb %}{{ _("agent.orders.breadcrumb") }}{% endblock %}
+
+{% block content %}
+  <div id="ordersView" class="view">
+    <div class="card">
+      <h2>🧾 Bons de commande</h2>
+
+      <div class="grid" style="display:grid;gap:10px;">
+        <div class="filters card"
+             style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;">
+          <div>
+            <label for="ordersFilterLabo">
+              {{ _("agent.orders.filters.labo") }}
+            </label>
+            <select id="ordersFilterLabo">
+              <option value="">
+                {{ _("agent.orders.filters.all_labos") }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label for="ordersFilterStatus">
+              {{ _("agent.orders.filters.status") }}
+            </label>
+            <select id="ordersFilterStatus">
+              <option value="">{{ _("agent.orders.filters.all") }}</option>
+              <option value="pending">{{ _("agent.orders.filters.pending") }}</option>
+              <option value="completed">{{ _("agent.orders.filters.completed") }}</option>
+              <option value="canceled">{{ _("agent.orders.filters.canceled") }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="ordersFilterPeriod">
+              {{ _("agent.orders.filters.period") }}
+            </label>
+            <select id="ordersFilterPeriod">
+              <option value="month">{{ _("agent.orders.filters.month") }}</option>
+              <option value="30d">{{ _("agent.orders.filters.30d") }}</option>
+              <option value="custom">{{ _("agent.orders.filters.custom") }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="ordersDateFrom">
+              {{ _("agent.orders.filters.from") }}
+            </label>
+            <input id="ordersDateFrom" type="date">
+          </div>
+
+          <div>
+            <label for="ordersDateTo">
+              {{ _("agent.orders.filters.to") }}
+            </label>
+            <input id="ordersDateTo" type="date">
+          </div>
+
+          <div>
+            <label for="agentOrdersSearch">
+              {{ _("agent.orders.filters.search") }}
+            </label>
+            <input id="agentOrdersSearch"
+                   type="search"
+                   placeholder="{{ _('agent.orders.filters.search_placeholder') }}">
+          </div>
+        </div>
+
+        <div id="agentOrders"></div>
+
+        <dialog id="orderDetail" style="border:none;border-radius:10px;padding:0;"></dialog>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="/static/agent/agent_orders.js?v3"></script>
+{% endblock %}

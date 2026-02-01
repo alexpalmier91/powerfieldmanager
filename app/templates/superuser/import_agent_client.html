@@ -1,0 +1,131 @@
+{# app/templates/superuser/import_agent_client.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Import matching agents / clients{% endblock %}
+{% block breadcrumb %}Import matching agents / clients{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2>Import matching agents / clients</h2>
+    <p class="text-muted">
+      Import d’un fichier Excel ou CSV contenant les colonnes :
+    </p>
+    <ul class="text-muted">
+      <li><strong>representant</strong> : nom du représentant (agent)</li>
+      <li><strong>email</strong> : email du client</li>
+      <li><strong>cp</strong> : code postal du client</li>
+    </ul>
+    <p class="text-muted">
+      L’outil :
+    </p>
+    <ul class="text-muted">
+      <li>cherche l’agent à partir du nom (avec regroupement des variantes)</li>
+      <li>cherche le client par <strong>email + CP</strong></li>
+      <li>efface le contenu de <code>agent_client</code>, puis recrée les liens</li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <form id="agent-client-import-form">
+      <div class="form-group mb-3">
+        <label for="file">Fichier (.xlsx / .csv)</label>
+        <input type="file" class="form-control" id="file" name="file" required>
+      </div>
+
+      <button type="submit" id="btn-import" class="btn btn-primary">
+        📥 Importer le matching
+      </button>
+
+      <span id="import-loader" class="ms-2" style="display:none;">
+        ⏳ Import en cours…
+      </span>
+    </form>
+
+    <hr>
+
+    <h3>Résultat</h3>
+    <pre id="import-result" style="background:#f8f9fa;padding:8px;border-radius:4px;max-height:260px;overflow:auto;">
+Aucun import lancé pour le moment.
+    </pre>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  "use strict";
+
+  const form   = document.getElementById("agent-client-import-form");
+  const fileEl = document.getElementById("file");
+  const btn    = document.getElementById("btn-import");
+  const loader = document.getElementById("import-loader");
+  const result = document.getElementById("import-result");
+
+  if (!form) return;
+
+  const API_URL = "/api-zenhub/superuser/import-agent-client";
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+
+    if (!fileEl.files || !fileEl.files.length) {
+      alert("Merci de sélectionner un fichier.");
+      return;
+    }
+
+    const token =
+      localStorage.zentro_token ||
+      localStorage.token ||
+      null;
+
+    if (!token) {
+      alert("Token manquant : vous devez être connecté (Bearer).");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("file", fileEl.files[0]);
+
+    btn.disabled = true;
+    loader.style.display = "inline";
+    result.textContent = "Envoi du fichier en cours…";
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token
+        },
+        body: fd,
+      });
+
+      const txt = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(txt);
+      } catch (e) {
+        // pas du JSON propre, on affiche brut
+      }
+
+      if (!res.ok) {
+        const msg = data && data.detail
+          ? (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))
+          : txt || ("HTTP " + res.status);
+        result.textContent = "Erreur:\n" + msg;
+        return;
+      }
+
+      result.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      console.error("[agent-client-import] error", err);
+      result.textContent = "Erreur réseau ou serveur : " + err;
+    } finally {
+      btn.disabled = false;
+      loader.style.display = "none";
+    }
+  });
+})();
+</script>
+{% endblock %}

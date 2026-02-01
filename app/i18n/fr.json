@@ -1,0 +1,336 @@
+{
+  "common": {
+    "loading": "Chargement…",
+    "no_result": "Aucun résultat",
+    "empty": "Aucun élément pour le moment.",
+    "actions": "Actions",
+    "cancel": "Annuler",
+    "confirm": "Valider",
+    "search": "Rechercher",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "yes": "Oui",
+    "no": "Non",
+    "filters": "Filtres",
+    "apply_filters": "Filtrer",
+    "reset_filters": "Réinitialiser",
+    "export_csv": "Exporter en CSV",
+    "export_excel": "Exporter en Excel"
+  },
+
+  "labo": {
+    "dashboard": {
+      "title": "🏭 Dashboard Labo",
+      "breadcrumb": "Labo / Tableau de bord",
+      "connected_as": "Vous êtes connecté en tant que compte Labo",
+      "stats_loading": "Chargement des statistiques…",
+      "impersonation_title": "⚠️ Mode impersonation",
+      "impersonation_desc": "Si vous voyez ce message, vous êtes probablement connecté en tant que Labo depuis le dashboard SuperUser.",
+      "exit_impersonation": "Quitter le mode Labo et revenir au dashboard SuperUser",
+      "stats": {
+        "labo_id": "ID Labo",
+        "product_count": "Nombre de produits"
+      }
+    },
+
+    "agents": {
+      "title": "Agents commerciaux rattachés au labo",
+      "table": {
+        "id": "ID",
+        "name": "Nom de l’agent"
+      },
+      "loading": "Chargement…",
+      "empty": "Aucun agent rattaché à ce laboratoire."
+    },
+
+    "orders": {
+      "title": "📦 Commandes reçues",
+      "search_placeholder": "Recherche (n° commande, client, agent, code client)…",
+
+      "filters": {
+        "status_label": "Statut",
+        "status_all": "Tous",
+        "status_draft": "Brouillon",
+        "status_validated": "Validée",
+        "status_shipped": "Expédiée",
+        "status_cancelled": "Annulée",
+        "date_from": "Date de",
+        "date_to": "à",
+        "agent": "Agent",
+        "apply": "Filtrer"
+      },
+
+      "table": {
+        "order_number": "N° commande",
+        "date": "Date commande",
+        "delivery_date": "Date livraison",
+        "client": "Client",
+        "total_ht": "Montant HT",
+        "status": "Statut",
+        "lines_qty": "Qté lignes",
+        "agent": "Agent"
+      },
+
+      "empty": "Aucune commande pour le moment.",
+      "modal_title": "Détail commande"
+    },
+
+    "products": {
+      "title": "🧪 Produits du labo",
+      "search_placeholder": "Recherche (nom, SKU, EAN)…",
+      "export_excel": "Exporter en Excel",
+      "import_link": "Import produits",
+
+      "table": {
+        "id": "ID",
+        "sku": "SKU",
+        "name": "Nom",
+        "price_ht": "Prix HT",
+        "stock": "Stock",
+        "variants": "Variantes",
+        "active": "Actif",
+        "tiers": "Tiers price"
+      },
+
+      "empty": "Aucun produit pour le moment.",
+
+      "tiers_modal": {
+        "title": "Prix dégressifs",
+        "min_qty": "Min Qty",
+        "price_ht": "Prix HT",
+        "actions": "Actions",
+        "no_tiers": "Aucun palier.",
+        "form_min_qty": "Min qty",
+        "form_price_ht": "Prix HT",
+        "form_submit": "Enregistrer"
+      }
+    },
+
+    "import_products": {
+      "title": "Import produits",
+      "back": "← Retour produits",
+
+      "format_title": "📘 Format du fichier Excel attendu (XLSX)",
+      "format_desc": "Chaque ligne correspond à un produit. Si un produit avec le même SKU existe déjà, il sera mis à jour.",
+
+      "mandatory_columns": "Colonnes obligatoires",
+      "optional_columns": "Colonnes optionnelles",
+
+      "columns": {
+        "sku": "Identifiant unique du produit",
+        "name": "Nom du produit",
+        "price_ht": "Prix HT (ex : 12.50)",
+        "stock": "Stock disponible (entier)",
+        "image_url": "URL HTTP(s) de l'image produit à importer",
+        "vat_rate": "Taux de TVA (0 à 100 — ex : 20, 5.5, 0)",
+        "description": "Description du produit",
+        "ean13": "Code-barres (13 chiffres)",
+        "is_active": "1 = actif, 0 = inactif",
+        "tier_min_qty": "Quantité minimale d'un palier de prix",
+        "tier_price_ht": "Prix HT associé au palier"
+      },
+
+      "rules": {
+        "img_dl": "✔ L'image sera téléchargée automatiquement sur le serveur.",
+        "update_existing": "✔ Les produits existants (même SKU) seront mis à jour.",
+        "update_tiers": "✔ Les paliers de prix seront automatiquement ajoutés ou mis à jour."
+      },
+
+      "download_template": "⬇ Télécharger le modèle Excel d'exemple",
+
+      "form": {
+        "label": "Fichier Excel (.xlsx)",
+        "submit": "Importer"
+      },
+
+      "result": {
+        "title": "Résumé de l'import",
+        "created": "Produits créés",
+        "updated": "Produits mis à jour",
+        "errors": "Erreurs",
+        "no_errors": "Aucune erreur."
+      }
+    }
+  },
+
+   "agent": {
+    "dashboard": {
+      "title": "🏷️ Dashboard Agent",
+      "breadcrumb": "Agent / Tableau de bord",
+      "welcome_title": "Bienvenue",
+      "welcome_desc": "Utilisez le menu latéral pour naviguer.",
+      "kpis": {
+        "orders": "Commandes (30 jours)",
+        "clients": "Clients actifs",
+        "sales": "CA estimé HT"
+      },
+      "quick_labo": "Sélection rapide du labo",
+      "all_labos": "Tous labos"
+    },
+
+    "clients": {
+      "title": "👥 Mes clients",
+      "breadcrumb": "Agent / Mes clients",
+      "subtitle": "Liste paginée de vos clients liés.",
+      "search_label": "Recherche client",
+      "search_placeholder": "Nom, ville, code postal",
+      "table": {
+        "name": "Nom",
+        "city": "Ville",
+        "zip": "Code postal",
+        "phone": "Téléphone"
+      }
+    },
+
+    "orders": {
+      "title": "📄 Mes commandes",
+      "breadcrumb": "Agent / Mes commandes",
+      "filters": {
+        "labo": "Labo",
+        "all_labos": "Tous les labos",
+        "status": "Statut",
+        "all": "Tous",
+        "pending": "En cours",
+        "completed": "Terminé",
+        "canceled": "Annulé",
+        "period": "Période",
+        "month": "Mois courant",
+        "30d": "30 jours",
+        "custom": "Personnalisée",
+        "from": "Du",
+        "to": "Au",
+        "search": "Recherche",
+        "search_placeholder": "Client / Labo / N° doc"
+      }
+    },
+
+    "catalog": {
+      "title": "Mes labos",
+      "labo_label": "Labo",
+      "search": "Recherche (nom, SKU, EAN)",
+      "sku": "SKU",
+      "ean": "EAN",
+      "name": "Nom",
+      "price": "Prix HT",
+      "stock": "Stock",
+      "active": "Actif",
+      "empty": "Aucun produit trouvé.",
+      "loading": "Chargement…",
+      "export_csv": "Export CSV"
+    },
+
+    "create_order": {
+      "title": "Créer une commande",
+      "client": {
+        "title": "Client",
+        "search_placeholder": "Recherche (nom / code / CP / ville)"
+      },
+      "labo": {
+        "title": "Labo"
+      },
+      "catalog": {
+        "title": "Catalogue produits",
+        "search_placeholder": "Rechercher un produit (nom, SKU, EAN)",
+        "loading": "Chargement…"
+      },
+      "cart": {
+        "title": "Panier",
+        "total_ht": "Total HT",
+        "submit": "Valider la commande",
+        "error": "Une erreur est survenue.",
+        "success": "Commande envoyée avec succès."
+      }
+    },
+
+    "agenda": {
+      "title": "Agenda des rendez-vous",
+      "newAppointment": "Nouveau rendez-vous",
+      "period": "Période",
+      "week": "Semaine à venir",
+      "month": "Mois",
+      "startDate": "À partir du",
+      "listTitle": "Rendez-vous",
+      "date": "Date",
+      "client": "Client",
+      "notes": "Notes",
+      "status": "Statut",
+      "noAppointments": "Aucun rendez-vous pour cette période.",
+      "searchClient": "Rechercher un client...",
+      "startAt": "Début du rendez-vous",
+      "endAt": "Fin du rendez-vous",
+      "statusLabels": {
+        "planned": "Prévu",
+        "done": "Terminé",
+        "cancelled": "Annulé"
+      },
+      "messages": {
+        "loadError": "Erreur lors du chargement des rendez-vous.",
+        "createSuccess": "Rendez-vous créé avec succès.",
+        "updateSuccess": "Rendez-vous mis à jour avec succès.",
+        "deleteConfirm": "Supprimer ce rendez-vous ?",
+        "deleteSuccess": "Rendez-vous supprimé."
+      }
+    },
+
+    "client_detail": {
+      "title": "Fiche client",
+      "breadcrumb": "Agent / Fiche client",
+
+      "tabs": {
+        "info": "Informations client",
+        "bank": "Informations bancaires",
+        "orders": "Commandes",
+        "revenue": "Chiffre d’affaires",
+        "products": "Produits les plus achetés",
+        "appointments": "Rendez-vous"
+      },
+
+      "bank_info": {
+        "title": "Informations bancaires",
+        "save": "Enregistrer",
+        "note": "Ces informations sont purement indicatives et n’ont pas valeur contractuelle."
+      },
+
+      "orders": {
+        "title": "Dernières commandes",
+        "table": {
+          "number": "N°",
+          "date": "Date",
+          "status": "Statut",
+          "total_ht": "Total HT",
+          "actions": "Actions"
+        },
+        "empty": "Aucune commande trouvée."
+      },
+
+      "revenue": {
+        "title": "Chiffre d’affaires",
+        "period_label": "Période",
+        "total_label": "CA total sur la période"
+      },
+
+      "products": {
+        "title": "Produits les plus achetés",
+        "table": {
+          "name": "Produit",
+          "sku": "Référence",
+          "qty": "Quantité",
+          "total_ht": "CA HT"
+        },
+        "empty": "Aucun produit sur cette période."
+      },
+
+      "appointments": {
+        "title": "Historique des rendez-vous",
+        "table": {
+          "date": "Date",
+          "notes": "Notes",
+          "status": "Statut",
+          "agent": "Agent"
+        },
+        "empty": "Aucun rendez-vous."
+      }
+    }
+  }
+
+}

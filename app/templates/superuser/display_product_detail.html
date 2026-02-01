@@ -1,0 +1,133 @@
+{# app/templates/superuser/display_product_detail.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Display Product {{ product.sku }}{% endblock %}
+{% block breadcrumb %}Superuser / Display Products / {{ product.sku }}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>Display Product {{ product.sku }}</h1>
+    <p style="color:#6b7280; margin-top:4px;">
+      Owner :
+      {% if product.owner_client %}
+        {{ product.owner_client.name }} (id {{ product.owner_client.id }})
+      {% else %}
+        Owner #{{ product.owner_client_id }}
+      {% endif %}
+    </p>
+
+    <div style="margin-top:12px;">
+      <div><strong>SKU :</strong> {{ product.sku }}</div>
+      <div><strong>Nom :</strong> {{ product.name }}</div>
+
+      {% if product.ean13 %}
+        <div><strong>EAN :</strong> {{ product.ean13 }}</div>
+      {% endif %}
+
+      {% if product.description %}
+        <div style="margin-top:8px;">
+          <strong>Description :</strong><br>
+          <span style="white-space:pre-wrap;">{{ product.description }}</span>
+        </div>
+      {% endif %}
+
+      <div style="margin-top:8px; color:#6b7280;">
+        Créé le
+        {% if product.created_at %}
+          {{ product.created_at.astimezone().strftime("%d/%m/%Y %H:%M") }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <h2 style="margin:0;">Lier un EPC</h2>
+
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button type="button" id="btnUseLastEpc" class="btn btn-secondary">
+          Utiliser l’EPC scanné
+        </button>
+        <span id="lastEpcInfo" style="color:#6b7280;"></span>
+      </div>
+    </div>
+
+    <p style="color:#6b7280; margin-top:8px;">
+      Saisir un EPC manuellement ou choisir un EPC non assigné détecté dans <code>rfid_tag</code>.
+    </p>
+
+    <form id="epcLinkForm" style="margin-top:12px; max-width:520px;">
+      <input type="hidden" id="displayProductId" value="{{ product.id }}">
+
+      <div class="form-group">
+        <label for="epcInput">EPC (saisie manuelle)</label>
+        <input
+          type="text"
+          id="epcInput"
+          class="input"
+          placeholder="Ex : 3008 33B2 0011 2233 4455 6677"
+          autocomplete="off"
+        >
+        <small style="color:#6b7280;">
+          Astuce : tu peux cliquer sur <strong>Utiliser l’EPC scanné</strong> pour pré-remplir automatiquement.
+        </small>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="epcSelect">EPC non assignés</label>
+        <div style="display:flex; gap:8px;">
+          <select id="epcSelect" class="input" style="flex:1;">
+            <option value="">-- Cliquer sur rafraîchir --</option>
+          </select>
+          <button type="button" id="btnRefreshEpc" class="btn btn-secondary">
+            Rafraîchir
+          </button>
+        </div>
+        <small style="color:#6b7280;">
+          La liste affiche les EPC présents dans <code>rfid_tag</code> qui ne sont pas encore liés à un Display Product.
+        </small>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button type="submit" class="btn btn-primary">Lier l'EPC</button>
+      </div>
+
+      <p id="epcFormInfo" style="margin-top:8px; color:#16a34a; display:none;"></p>
+      <p id="epcFormError" style="margin-top:8px; color:#b91c1c; display:none;"></p>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h2>EPC déjà liés</h2>
+
+    <table class="table" style="margin-top:8px; width:100%;">
+      <thead>
+        <tr>
+          <th>EPC</th>
+          <th>Lié le</th>
+        </tr>
+      </thead>
+      <tbody id="epcLinkedTableBody">
+        {% for link in product.rfid_links %}
+          <tr>
+            <td>{{ link.epc }}</td>
+            <td>
+              {% if link.linked_at %}
+                {{ link.linked_at.astimezone().strftime("%d/%m/%Y %H:%M") }}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="2" style="text-align:center; color:#6b7280;">
+              Aucun EPC lié pour le moment.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# JS page EPC (doit gérer btnUseLastEpc + lastEpcInfo) #}
+  <script src="/static/superuser/display_product_epc.js"></script>
+{% endblock %}

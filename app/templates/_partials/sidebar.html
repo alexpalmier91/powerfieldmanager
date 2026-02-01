@@ -1,0 +1,20 @@
+{# Détermine le rôle #}
+{# 1) priorité au rôle passé depuis la route (context) #}
+{# 2) sinon, déduction par le prefixe d’URL #}
+{% set _role = role
+   or ('AGENT' if request.url.path.startswith('/agent')
+       else 'SUPERUSER' if request.url.path.startswith('/superuser')
+       else 'LABO' if request.url.path.startswith('/labo')
+       else 'AGENT') %}
+
+{# Dispatch vers le menu correspondant #}
+{% if _role == 'AGENT' %}
+  {% include "_partials/menus/agent.html" %}
+{% elif _role == 'LABO' %}
+  {% include "_partials/menus/labo.html" %}
+{% elif _role == 'SUPERUSER' %}
+  {% include "_partials/menus/superuser.html" %}
+{% else %}
+  {# fallback #}
+  {% include "_partials/menus/agent.html" %}
+{% endif %}

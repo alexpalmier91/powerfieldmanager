@@ -1,0 +1,59 @@
+"""add marketing_document
+
+Revision ID: 9c3f1a2b7d10
+Revises: <PUT_PREVIOUS_REVISION_ID_HERE>
+Create Date: 2025-12-17 00:00:00
+"""
+
+from __future__ import annotations
+
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
+revision = "20251217_add_marketing_document"
+down_revision = "20251216_add_validated_to_orderstatus_enum"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    op.create_table(
+        "marketing_document",
+        sa.Column("id", sa.Integer(), primary_key=True, nullable=False),
+        sa.Column("labo_id", sa.Integer(), nullable=False),
+        sa.Column("filename", sa.String(length=255), nullable=False),
+        sa.Column("original_name", sa.String(length=255), nullable=False),
+        sa.Column("title", sa.String(length=255), nullable=False),
+        sa.Column("comment", sa.Text(), nullable=True),
+        sa.Column("doc_type", sa.String(length=50), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["labo_id"],
+            ["labo.id"],
+            name="fk_marketing_document_labo_id_labo",
+            ondelete="CASCADE",
+        ),
+    )
+
+    # Index de filtre principal
+    op.create_index(
+        "ix_marketing_document_labo_id",
+        "marketing_document",
+        ["labo_id"],
+        unique=False,
+    )
+
+    # Index pour tri par date par labo
+    op.create_index(
+        "ix_marketing_document_labo_created_at",
+        "marketing_document",
+        ["labo_id", "created_at"],
+        unique=False,
+    )
+
+
+def downgrade() -> None:
+    op.drop_index("ix_marketing_document_labo_created_at", table_name="marketing_document")
+    op.drop_index("ix_marketing_document_labo_id", table_name="marketing_document")
+    op.drop_table("marketing_document")

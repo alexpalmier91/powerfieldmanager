@@ -1,0 +1,54 @@
+# app/routers/labo_marketing_documents_draft_api.py
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_async_session
+from app.db.models import MarketingDocument
+from app.core.security import require_role
+
+router = APIRouter(
+    prefix="/api-zenhub/marketing",
+    tags=["labo-marketing-documents-draft"],
+)
+
+
+def _get_labo_id(user) -> int:
+    labo_id = getattr(user, "labo_id", None)
+    if labo_id is None and isinstance(user, dict):
+        labo_id = user.get("labo_id")
+    if not labo_id:
+        raise HTTPException(status_code=403, detail="Compte labo inactif ou non rattaché")
+    try:
+        return int(labo_id)
+    except Exception:
+        raise HTTPException(status_code=403, detail="Contexte labo invalide")
+
+
+class DraftPayload(BaseModel):
+    draft: Dict[str, Any]
+
+
+@router.put("/documents/{doc_id}/draft")
+async def save_marketing_document_draft(
+    doc_id: int,
+    payload: DraftPayload,
+    session: AsyncSession = Depends(get_async_session),
+    user=Depends(require_role("LABO")),
+):
+    labo_id = _get_labo_id(user)
+
+    doc = await session.get(MarketingDocument, doc_id)
+    if not doc or int(doc.labo_id) != labo_id:
+        raise HTTPException(status_code=404, detail="Document introuvable")
+
+    # ✅ nécessite MarketingDocument.draft_json (JSONB)
+    setattr(doc, "draft_json", payload.draft)
+
+    await session.commit()
+    return {"ok": True}

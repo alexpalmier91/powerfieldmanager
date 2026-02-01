@@ -1,0 +1,115 @@
+{# app/templates/superuser/rfid_by_client.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Tags RFID par client{% endblock %}
+{% block breadcrumb %}RFID / Tags par client{% endblock %}
+
+{% block content %}
+  <h1>Tags RFID par client</h1>
+
+  <div class="card" style="margin-top:16px;">
+    <form method="get"
+          style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <input type="text"
+             name="q"
+             placeholder="Filtrer sur le nom du client"
+             value="{{ q }}"
+             style="padding:4px 8px; min-width:260px;">
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+    </form>
+    <p style="color:#6b7280; font-size:0.9rem; margin-top:8px;">
+      Affiche, pour chaque client ayant au moins un présentoir, les tags RFID
+      actuellement présents sur ses présentoirs.
+    </p>
+  </div>
+
+  {% if client_groups %}
+    {% for entry in client_groups %}
+      {% set client = entry.client %}
+      <div class="card" style="margin-top:16px;">
+        <h2 style="margin-top:0;">
+          Client [{{ client.id }}] {{ client.company_name }}
+        </h2>
+        <p style="color:#6b7280; font-size:0.9rem;">
+          {{ client.address1 or "" }} {{ client.postcode or "" }} {{ client.city or "" }}
+        </p>
+
+        {% set pres_map = entry.presentoirs %}
+        {% if pres_map %}
+          {% for pid, pinfo in pres_map.items() %}
+            {% set pres = pinfo.presentoir %}
+            <div style="margin-top:12px; border-top:1px solid #e5e7eb; padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0;">
+                    Présentoir {{ pres.code }}
+                    {% if pres.name %} – {{ pres.name }}{% endif %}
+                  </h3>
+                  <p style="margin:4px 0; color:#6b7280; font-size:0.85rem;">
+                    Tags actifs : {{ pinfo.tags|length }}
+                  </p>
+                </div>
+                <div>
+                  <a href="/superuser/presentoirs/{{ pres.id }}"
+                     class="btn">
+                    Détail présentoir →
+                  </a>
+                </div>
+              </div>
+
+              {% if pinfo.tags %}
+                <table class="table" style="margin-top:8px;">
+                  <thead>
+                    <tr>
+                      <th>EPC</th>
+                      <th>SKU</th>
+                      <th>Produit</th>
+                      <th>Statut</th>
+                      <th>Niveau / Position</th>
+                      <th>Dernière vue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for t in pinfo.tags %}
+                      <tr>
+                        <td style="font-family:monospace; font-size:0.85rem;">
+                          {{ t.epc }}
+                        </td>
+                        <td>{{ t.sku or "-" }}</td>
+                        <td>
+                          {% if t.product_id %}
+                            [{{ t.product_id }}] {{ t.product_name or "-" }}
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                        <td>{{ t.status }}</td>
+                        <td>
+                          {% if t.level_index is not none or t.position_index is not none %}
+                            Niv {{ t.level_index if t.level_index is not none else "-" }},
+                            Pos {{ t.position_index if t.position_index is not none else "-" }}
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                        <td>{{ t.last_seen_at or "-" }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% else %}
+                <p>Aucun tag actif sur ce présentoir.</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>Aucun présentoir pour ce client.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card" style="margin-top:16px;">
+      <p>Aucun client avec présentoir actif ne correspond au filtre.</p>
+    </div>
+  {% endif %}
+{% endblock %}

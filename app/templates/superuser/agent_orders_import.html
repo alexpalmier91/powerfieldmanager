@@ -1,0 +1,92 @@
+{# app/templates/superuser/agent_orders_import.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Import commandes agents{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header mb-4">
+    <h1 class="h3">Import commandes agents</h1>
+    <p class="text-muted">
+      Importer les commandes saisies par les agents à partir d'un fichier Excel.
+      Le fichier doit contenir une feuille <code>merged</code> (ou la première feuille sera utilisée)
+      avec au minimum les colonnes :
+      <code>order_number</code>, <code>company_name</code>, <code>order_date</code>,
+      <code>delivery_date</code>, <code>agent</code>, <code>sku</code>,
+      <code>qty</code>, <code>unit_ht</code>, <code>code_client</code>.
+    </p>
+  </header>
+
+  <section class="card p-3 p-md-4">
+    <form id="agent-orders-import-form" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="labo-id-input" class="form-label fw-semibold">
+          Labo cible
+        </label>
+        <select
+          id="labo-id-input"
+          name="labo_id"
+          class="form-select"
+          required
+        >
+          <option value="">— Sélectionner un labo —</option>
+          {% for labo in labos %}
+            <option value="{{ labo.id }}">{{ labo.id }} – {{ labo.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="excel-file" class="form-label fw-semibold">
+          Fichier Excel
+        </label>
+        <input
+          type="file"
+          id="excel-file"
+          name="file"
+          class="form-control"
+          accept=".xlsx,.xls"
+          required
+        />
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          id="btn-import"
+        >
+          Importer
+        </button>
+        <span
+          class="text-muted small"
+          id="import-spinner"
+          style="display:none;"
+        >
+          Import en cours…
+        </span>
+      </div>
+    </form>
+  </section>
+
+  <section class="card mt-4 p-3 p-md-4">
+    <h2 class="h5 mb-3">Résultat de l'import</h2>
+
+    <div id="import-result" class="mb-3" style="white-space:pre-wrap;"></div>
+
+    <div>
+      <h3 class="h6">Erreurs</h3>
+      <pre
+        id="import-errors"
+        class="bg-light border rounded p-2 small"
+        style="max-height: 260px; overflow-y: auto;"
+      ></pre>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="/static/superuser/pages/agent_orders_import.js?v=2025-11-25-1"></script>
+{% endblock %}

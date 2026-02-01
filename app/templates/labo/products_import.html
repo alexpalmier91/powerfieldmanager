@@ -1,0 +1,104 @@
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<div class="app-page">
+  <div class="app-page-header">
+    <h1>{{ _("labo.import_products.title") }}</h1>
+    <a href="/labo/products" class="btn btn-secondary">
+      {{ _("labo.import_products.back") }}
+    </a>
+  </div>
+
+  <!-- Bloc d'information sur le format attendu -->
+  <div class="card" style="margin-bottom:20px;">
+    <h2>{{ _("labo.import_products.format_title") }}</h2>
+
+    <p>{{ _("labo.import_products.format_desc") }}</p>
+
+    <h3>{{ _("labo.import_products.mandatory_columns") }}</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{{ _("labo.import_products.col_header_name") if _("labo.import_products.col_header_name") != "labo.import_products.col_header_name" else "Colonne" }}</th>
+          <th>{{ _("labo.import_products.col_header_desc") if _("labo.import_products.col_header_desc") != "labo.import_products.col_header_desc" else "Description" }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>sku</td><td>{{ _("labo.import_products.columns.sku") }}</td></tr>
+        <tr><td>name</td><td>{{ _("labo.import_products.columns.name") }}</td></tr>
+        <tr><td>price_ht</td><td>{{ _("labo.import_products.columns.price_ht") }}</td></tr>
+        <tr><td>stock</td><td>{{ _("labo.import_products.columns.stock") }}</td></tr>
+        <tr><td>image_url</td><td>{{ _("labo.import_products.columns.image_url") }}</td></tr>
+        <tr><td>vat_rate</td><td>{{ _("labo.import_products.columns.vat_rate") }}</td></tr>
+      </tbody>
+    </table>
+
+    <h3>{{ _("labo.import_products.optional_columns") }}</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{{ _("labo.import_products.col_header_name") if _("labo.import_products.col_header_name") != "labo.import_products.col_header_name" else "Colonne" }}</th>
+          <th>{{ _("labo.import_products.col_header_desc") if _("labo.import_products.col_header_desc") != "labo.import_products.col_header_desc" else "Description" }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>description</td><td>{{ _("labo.import_products.columns.description") }}</td></tr>
+        <tr><td>ean13</td><td>{{ _("labo.import_products.columns.ean13") }}</td></tr>
+        <tr><td>is_active</td><td>{{ _("labo.import_products.columns.is_active") }}</td></tr>
+        <tr><td>tier_min_qty</td><td>{{ _("labo.import_products.columns.tier_min_qty") }}</td></tr>
+        <tr><td>tier_price_ht</td><td>{{ _("labo.import_products.columns.tier_price_ht") }}</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:10px;">
+      {{ _("labo.import_products.rules.img_dl") }}<br>
+      {{ _("labo.import_products.rules.update_existing") }}<br>
+      {{ _("labo.import_products.rules.update_tiers") }}
+    </p>
+
+    <a href="/api-zenhub/labo/products/import-template"
+       class="btn btn-outline-primary"
+       style="margin-top:10px;">
+      {{ _("labo.import_products.download_template") }}
+    </a>
+  </div>
+
+  <!-- Formulaire d'import -->
+  <form id="import-form" class="card">
+    <div>
+      <label for="file">{{ _("labo.import_products.form.label") }}</label>
+      <input type="file" id="file" name="file" accept=".xlsx" required />
+    </div>
+    <button type="submit" class="btn btn-primary">
+      {{ _("labo.import_products.form.submit") }}
+    </button>
+  </form>
+
+  <!-- Résultat de l'import -->
+  <div id="import-result" class="card hidden">
+    <h2>{{ _("labo.import_products.result.title") }}</h2>
+    <p>{{ _("labo.import_products.result.created") }} : <span id="res-created">0</span></p>
+    <p>{{ _("labo.import_products.result.updated") }} : <span id="res-updated">0</span></p>
+
+    <h3>{{ _("labo.import_products.result.errors") }}</h3>
+    <table class="table" id="errors-table">
+      <thead>
+        <tr>
+          <th>Ligne</th>
+          <th>SKU</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody id="errors-tbody">
+        <tr id="errors-empty">
+          <td colspan="3">{{ _("labo.import_products.result.no_errors") }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<link rel="stylesheet" href="/static/labo/products.css">
+<script src="/static/labo/products.js?v=1"></script>
+<script src="/static/labo/products_import.js?v=1"></script>
+{% endblock %}

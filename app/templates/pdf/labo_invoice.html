@@ -1,0 +1,388 @@
+{# app/templates/pdf/labo_invoice.html #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Facture {{ doc.order_number }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 10mm 15mm 10mm;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #111;
+    }
+
+    .page {
+      width: 100%;
+    }
+
+    .header {
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    .header-left {
+      width: 55%;
+      float: left;
+    }
+
+    .header-right {
+      width: 40%;
+      float: right;
+      text-align: right;
+      border: 1px solid #444;
+      padding: 8px 10px;
+      font-size: 10pt;
+    }
+
+    .header-right-title {
+      font-size: 13pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .labo-name {
+      font-size: 12pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .labo-info {
+      font-size: 8pt;
+      line-height: 1.3;
+    }
+
+    .clearfix {
+      clear: both;
+    }
+
+    .block-row {
+      width: 100%;
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+
+    .block-col {
+      width: 48%;
+      display: inline-block;
+      vertical-align: top;
+      font-size: 9pt;
+    }
+
+    .block-title {
+      font-weight: bold;
+      padding: 3px 4px;
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      text-transform: uppercase;
+      font-size: 8pt;
+    }
+
+    .block-body {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      min-height: 40px;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 8.5pt;
+    }
+
+    .meta-table td {
+      padding: 2px 4px;
+    }
+
+    .meta-label {
+      font-weight: bold;
+      width: 40%;
+      white-space: nowrap;
+    }
+
+    .meta-value {
+      width: 60%;
+      text-align: right;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 8.5pt;
+    }
+
+    .items-table thead th {
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      padding: 4px 3px;
+      text-align: left;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .items-table tbody td {
+      border: 1px solid #ddd;
+      padding: 3px 3px;
+    }
+
+    .items-table .col-ref {
+      width: 22%;
+    }
+    .items-table .col-desc {
+      width: 46%;
+    }
+    .items-table .col-qty {
+      width: 8%;
+      text-align: right;
+    }
+    .items-table .col-pu {
+      width: 12%;
+      text-align: right;
+    }
+    .items-table .col-total {
+      width: 12%;
+      text-align: right;
+    }
+
+    .totals-block {
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .totals-right {
+      float: right;
+      width: 45%;
+    }
+
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+    }
+
+    .totals-table td {
+      padding: 3px 4px;
+      border: 1px solid #ccc;
+    }
+
+    .totals-label {
+      font-weight: bold;
+      text-align: right;
+      width: 60%;
+    }
+
+    .totals-value {
+      text-align: right;
+      width: 40%;
+      white-space: nowrap;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 10mm;
+      left: 10mm;
+      right: 10mm;
+      font-size: 7pt;
+      color: #666;
+      border-top: 1px solid #ccc;
+      padding-top: 4px;
+    }
+
+    .footer-line {
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    {# =================== EN-TÊTE =================== #}
+    <div class="header">
+      <div class="header-left">
+        {% if labo.logo_url %}
+          <div style="margin-bottom: 6px;">
+            <img src="{{ labo.logo_url }}" alt="Logo {{ labo.name }}" style="max-height:40px;">
+          </div>
+        {% endif %}
+        <div class="labo-name">{{ labo.name }}</div>
+        <div class="labo-info">
+          {% if labo.address1 %}{{ labo.address1 }}<br>{% endif %}
+          {% if labo.postcode or labo.city %}
+            {{ labo.postcode }} {{ labo.city }}<br>
+          {% endif %}
+          {% if labo.country %}{{ labo.country }}<br>{% endif %}
+          {% if labo.phone %}Tél : {{ labo.phone }}<br>{% endif %}
+          {% if labo.email %}E-mail : {{ labo.email }}{% endif %}
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-right-title">FACTURE</div>
+        <table class="meta-table">
+          <tr>
+            <td class="meta-label">N° facture</td>
+            <td class="meta-value">{{ doc.order_number }}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Date</td>
+            <td class="meta-value">
+              {{ doc.order_date.strftime("%d/%m/%Y") if doc.order_date else "" }}
+            </td>
+          </tr>
+          {% if getattr(doc, "customer_ref", None) %}
+          <tr>
+            <td class="meta-label">Réf. client</td>
+            <td class="meta-value">{{ doc.customer_ref }}</td>
+          </tr>
+          {% endif %}
+          {% if getattr(doc, "sage_code", None) %}
+          <tr>
+            <td class="meta-label">Code client</td>
+            <td class="meta-value">{{ doc.sage_code }}</td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    {# =================== BLOCS CLIENT / LIVRAISON =================== #}
+    <div class="block-row">
+      <div class="block-col">
+        <div class="block-title">Facturé à</div>
+        <div class="block-body">
+          <strong>{{ client.company_name }}</strong><br>
+          {% if client.address1 %}{{ client.address1 }}<br>{% endif %}
+          {% if client.postcode or client.city %}
+            {{ client.postcode }} {{ client.city }}<br>
+          {% endif %}
+          {% if client.country %}{{ client.country }}<br>{% endif %}
+          {% if client.phone %}Tél : {{ client.phone }}<br>{% endif %}
+          {% if getattr(client, "sage_code", None) %}Code client : {{ client.sage_code }}{% endif %}
+        </div>
+      </div>
+
+      <div class="block-col" style="float:right;">
+        <div class="block-title">Livré à</div>
+        <div class="block-body">
+          <strong>{{ delivery.company_name or client.company_name }}</strong><br>
+          {% if delivery.address1 or client.address1 %}
+            {{ delivery.address1 or client.address1 }}<br>
+          {% endif %}
+          {% set d_postcode = delivery.postcode or client.postcode %}
+          {% set d_city = delivery.city or client.city %}
+          {% if d_postcode or d_city %}
+            {{ d_postcode }} {{ d_city }}<br>
+          {% endif %}
+          {% if delivery.country or client.country %}
+            {{ delivery.country or client.country }}<br>
+          {% endif %}
+        </div>
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    {# =================== TABLEAU DES LIGNES =================== #}
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th class="col-ref">Référence</th>
+          <th class="col-desc">Désignation</th>
+          <th class="col-qty">Qté</th>
+          <th class="col-pu">PU HT</th>
+          <th class="col-total">Total HT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for li in items %}
+        <tr>
+          <td class="col-ref">
+            {{ li.sku or "" }}
+          </td>
+          <td class="col-desc">
+            {{ li.product_name or "" }}
+          </td>
+          <td class="col-qty">
+            {{ "%.2f"|format(li.qty or li.quantity or 0) }}
+          </td>
+          <td class="col-pu">
+            {{ "%.2f"|format(li.unit_ht or li.unit_price_ht or 0) }} €
+          </td>
+          <td class="col-total">
+            {{ "%.2f"|format(li.total_ht or 0) }} €
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not items %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:10px 0;">
+            Aucune ligne.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {# =================== TOTAUX =================== #}
+    <div class="totals-block">
+      <div class="totals-right">
+        <table class="totals-table">
+          <tr>
+            <td class="totals-label">Total HT</td>
+            <td class="totals-value">
+              {{ "%.2f"|format(doc.total_ht or 0) }} €
+            </td>
+          </tr>
+          {% if getattr(doc, "total_tva", None) is not none %}
+          <tr>
+            <td class="totals-label">TVA</td>
+            <td class="totals-value">
+              {{ "%.2f"|format(doc.total_tva or 0) }} €
+            </td>
+          </tr>
+          {% endif %}
+          {% if getattr(doc, "total_ttc", None) is not none %}
+          <tr>
+            <td class="totals-label">Total TTC</td>
+            <td class="totals-value">
+              {{ "%.2f"|format(doc.total_ttc or 0) }} €
+            </td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    {# =================== PIED DE PAGE =================== #}
+    <div class="footer">
+      <div class="footer-line">
+        {{ labo.name }}
+        {% if getattr(labo, "legal_form", None) %} - {{ labo.legal_form }}{% endif %}
+      </div>
+      <div class="footer-line">
+        {% if getattr(labo, "siret", None) %}SIRET : {{ labo.siret }}{% endif %}
+        {% if getattr(labo, "vat_number", None) %} - TVA : {{ labo.vat_number }}{% endif %}
+        {% if getattr(labo, "rcs", None) %} - RCS : {{ labo.rcs }}{% endif %}
+      </div>
+      {% if getattr(labo, "bank_iban", None) or getattr(labo, "bank_bic", None) %}
+      <div class="footer-line">
+        Coordonnées bancaires :
+        {% if labo.bank_iban %}IBAN {{ labo.bank_iban }}{% endif %}
+        {% if labo.bank_bic %} / BIC {{ labo.bank_bic }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</body>
+</html>

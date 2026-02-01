@@ -1,0 +1,110 @@
+{# app/templates/superuser/import_client_mapping.html #}
+{% extends "_layouts/app.html" %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', path='/superuser/client_mapping.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" id="superuser-import-client-mapping-page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 data-i18n="superuser.client_mapping.title">
+      Mapping clients / labos
+    </h1>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form
+        id="import-client-mapping-form"
+        enctype="multipart/form-data"
+        class="row g-3 align-items-end"
+      >
+        <div class="col-md-4">
+          <label
+            for="labo-select"
+            class="form-label"
+            data-i18n="superuser.client_mapping.labo.label"
+          >
+            Laboratoire
+          </label>
+          <select id="labo-select" class="form-select" required>
+            <option value="" data-i18n="superuser.client_mapping.labo.placeholder">
+              Sélectionner un laboratoire
+            </option>
+            {% for labo in labos %}
+              <option value="{{ labo.id }}">
+                {{ labo.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text" data-i18n="superuser.client_mapping.labo.help">
+            Les codes clients seront associés à ce laboratoire.
+          </div>
+        </div>
+
+        <div class="col-md-5">
+          <label
+            for="mapping-file"
+            class="form-label"
+            data-i18n="superuser.client_mapping.file.label"
+          >
+            Fichier mapping (Excel ou CSV)
+          </label>
+          <input
+            type="file"
+            class="form-control"
+            id="mapping-file"
+            name="file"
+            accept=".xlsx,.xls,.csv"
+            required
+          >
+          <div class="form-text" data-i18n="superuser.client_mapping.file.help">
+            Colonnes minimales : code_client + (siret)
+            ou (company_name + postcode + city).
+          </div>
+        </div>
+
+        <div class="col-md-3 text-md-end">
+          <button
+            type="submit"
+            class="btn btn-primary mt-3 mt-md-0"
+            data-i18n="superuser.client_mapping.submit"
+          >
+            Importer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span data-i18n="superuser.client_mapping.result.title">
+        Résultat de l’import
+      </span>
+    </div>
+    <div class="card-body">
+      <div
+        id="import-mapping-status"
+        class="mb-2 text-muted"
+        data-i18n="superuser.client_mapping.result.empty"
+      >
+        En attente d’un fichier…
+      </div>
+
+      <pre
+        id="import-mapping-result"
+        class="small mb-0"
+        style="white-space: pre-wrap;"
+      ></pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="/static/superuser/pages/import_client_mapping.js"></script>
+{% endblock %}

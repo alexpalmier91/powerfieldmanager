@@ -1,0 +1,101 @@
+{# app/templates/agent/labos.html #}
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<section class="agent-labos">
+
+  <h1 class="mb-3">Mes labos</h1>
+
+  <div class="card agent-catalog-card">
+    <div class="card-body">
+
+      {# Ligne labo + total + export #}
+      <div class="row align-items-center mb-3">
+        <div class="col-md-6 col-lg-4">
+          <div class="mb-1">
+            Total : <strong id="totalCount" aria-live="polite">0</strong>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <label for="agentLaboSelect" class="form-label mb-0">
+              Labo :
+            </label>
+            <select id="agentLaboSelect"
+                    aria-label="Labo"
+                    class="form-select form-select-sm"></select>
+
+            <button id="exportCsvBtn"
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm">
+              Export CSV
+            </button>
+          </div>
+
+          <small class="text-muted d-block mt-1">
+            Catalogue des produits de vos labos partenaires.
+          </small>
+        </div>
+      </div>
+
+      {# 🔍 Barre de recherche principale – même logique que “Mes clients” #}
+      <div class="mb-3">
+        <label for="filter_search" class="form-label">
+          Recherche produit
+        </label>
+        <input id="filter_search"
+               name="search"
+               form="catalogFilters"
+               class="form-control"
+               placeholder="Nom, SKU, EAN" />
+      </div>
+
+      {# Formulaire technique pour l’API (tout en caché) #}
+      <form id="catalogFilters" style="display:none;">
+        {# champs conservés pour le JS #}
+        <input id="filter_sku"        name="sku"        type="hidden" />
+        <input id="filter_ean"        name="ean"        type="hidden" />
+        <input id="filter_in_stock"   name="in_stock"   type="hidden" />
+        <input id="filter_min_price"  name="min_price"  type="hidden" />
+        <input id="filter_max_price"  name="max_price"  type="hidden" />
+
+        <input id="filter_page"       name="page"       type="hidden" value="1" />
+        <input id="filter_page_size"  name="page_size"  type="hidden" value="25" />
+        <input id="filter_sort"       name="sort"       type="hidden" value="sku" />
+        <input id="filter_dir"        name="dir"        type="hidden" value="asc" />
+      </form>
+
+      <div id="skeleton" class="skeleton text-center py-3" style="display:none">
+        Chargement du catalogue…
+      </div>
+
+      <div id="emptyState" class="empty text-center py-3" style="display:none">
+        Aucun produit trouvé pour ce labo.
+      </div>
+
+      <div class="table-responsive agent-catalog-wrapper">
+        <table class="table table-hover align-middle catalog">
+          <thead id="catalogHead">
+			<tr>
+			  <th class="col-thumb">Image</th>
+			  <th class="col-sku" data-sort="sku">SKU</th>
+			  <th class="col-ean">EAN</th>
+			  <th class="col-name" data-sort="name">Nom</th>
+			  <th class="col-price text-end" data-sort="price_ht">Prix HT</th>
+			  <th class="col-commission text-end">Commission</th>
+			  <th class="col-tiers">Tiers price</th>
+			  <th class="col-stock text-end" data-sort="stock_qty">Stock</th>
+			</tr>
+          </thead>
+          <tbody id="catalogBody"></tbody>
+        </table>
+      </div>
+
+      <div id="catalogPager" class="pager mt-2"></div>
+    </div>
+  </div>
+
+</section>
+
+<link rel="stylesheet" href="/static/agent/pages/labos/catalog.css?v7">
+<script type="module" src="/static/agent/pages/labos/index.js?v5"></script>
+{% endblock %}

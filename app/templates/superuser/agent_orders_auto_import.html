@@ -1,0 +1,96 @@
+{# app/templates/superuser/agent_orders_auto_import.html #}
+{% extends "_layouts/app.html" %}
+{% block title %}Import auto commandes agents{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3">Import automatique des commandes agents</h1>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <strong>Choisissez un laboratoire</strong>
+    </div>
+    <div class="card-body">
+      <select id="labo-id" class="form-select">
+        <option value="">-- Sélectionnez un labo --</option>
+        {% for labo in labos %}
+          <option value="{{ labo.id }}">{{ labo.name }} (ID {{ labo.id }})</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div id="config-section" class="card" style="display:none;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Configuration de l'import des commandes agents</strong>
+      </div>
+      <span id="last-status-text" class="badge bg-secondary">—</span>
+    </div>
+
+    <div class="card-body">
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="auto-enabled">
+        <label class="form-check-label" for="auto-enabled">
+          Activer l'import automatique des commandes pour ce labo
+        </label>
+      </div>
+
+      <div class="mb-3">
+        <label for="drive-folder-id" class="form-label">ID du dossier Google Drive</label>
+        <input type="text" class="form-control" id="drive-folder-id" placeholder="1AbCdEfG...">
+        <div class="form-text">
+          ID du dossier qui contient les CSV de commandes agents (ex : commandes_YYYYMMDD_1.csv).
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="drive-folder-url" class="form-label">URL du dossier Google Drive (optionnel)</label>
+        <input type="text" class="form-control" id="drive-folder-url" placeholder="https://drive.google.com/...">
+      </div>
+
+      <div class="mb-3">
+        <label for="run-at" class="form-label">Heure d'exécution quotidienne (HH:MM, optionnel)</label>
+        <input type="time" class="form-control" id="run-at" placeholder="09:00">
+      </div>
+
+      <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:8px;">
+        <button type="button" id="btn-save-config" class="btn btn-primary btn-sm">
+          💾 Enregistrer la configuration
+        </button>
+
+        <button type="button" id="btn-run-now" class="btn btn-success btn-sm">
+          ▶ Importer les commandes du jour maintenant
+        </button>
+
+        <span id="auto-import-loader" style="display:none;" class="ms-2">
+          ⏳ Traitement en cours...
+        </span>
+      </div>
+
+      <div id="auto-import-messages" class="mb-3"></div>
+
+      <div class="mt-4">
+        <h5>Dernier statut</h5>
+        <dl id="last-status">
+          <dt>Dernière exécution</dt>
+          <dd id="last-run-at">—</dd>
+
+          <dt>Résumé</dt>
+          <dd>
+            <pre id="last-summary" style="background:#f8f9fa;padding:8px;border-radius:4px;max-height:250px;overflow:auto;">—</pre>
+          </dd>
+
+          <dt>Dernière erreur</dt>
+          <dd>
+            <pre id="last-error" style="background:#f8f9fa;padding:8px;border-radius:4px;max-height:250px;overflow:auto;">—</pre>
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# 👇 EXACTEMENT comme pour labo_sales_import_sync.html #}
+<script src="{{ url_for('static', path='/superuser/agent_orders_auto_import.js') }}"></script>
+{% endblock %}

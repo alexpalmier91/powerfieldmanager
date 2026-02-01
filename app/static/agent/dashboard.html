@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Agent</title>
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+  <style>
+    body { padding: 2rem; background: #f9fafb; font-family: system-ui; }
+    .navbar { margin-bottom: 2rem; }
+    .section-title { font-weight: 600; font-size: 1.25rem; margin-top: 1.5rem; }
+    .card { border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+    .card-body { padding: 1rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-light bg-light justify-content-between px-3 rounded">
+    <span class="navbar-brand mb-0 h1">🧾 Tableau de bord Agent</span>
+    <div>
+      <span id="whoami" class="text-muted me-3"></span>
+      <button id="logoutBtn" class="btn btn-outline-secondary btn-sm">Déconnexion</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div id="labosSection">
+      <h2 class="section-title">🏢 Mes Laboratoires</h2>
+      <div id="labosList" class="row"></div>
+    </div>
+	<div class="mb-3" style="display:flex; gap:12px; align-items:center;">
+	  <a class="btn btn-success" href="/agent/order.html" style="background:#30d5c8;border:none;color:#00332e;font-weight:700;">
+		➕ Créer une commande
+	  </a>
+	  <span class="text-muted">Produits du laboratoire rattaché</span>
+	</div>
+
+	<h3>Mes commandes</h3>
+	<div id="ordersList" class="row g-3"></div>
+	<div id="ordersEmpty" class="text-muted" style="display:none;">Aucune commande pour le moment.</div>
+
+	
+
+    <div id="clientsSection">
+      <h2 class="section-title">💊 Mes Clients</h2>
+      <input type="text" id="searchClient" class="form-control mb-3" placeholder="Rechercher un client..." />
+      <div id="clientsList"></div>
+    </div>
+  </div>
+
+  <script src="/static/agent/agent_dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+{# app/templates/superuser/presentoir_detail.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Présentoir RFID / {{ presentoir.code }}{% endblock %}
+{% block breadcrumb %}Présentoirs RFID / {{ presentoir.code }}{% endblock %}
+
+{% block content %}
+  <h1>Présentoir {{ presentoir.code }}</h1>
+
+  {# =======================================================
+     ACTIONS MÉTIER
+     ======================================================= #}
+  <div class="card" style="margin-top:16px; display:flex; align-items:center; justify-content:space-between; gap:24px;">
+    <div>
+      <h2>Actions</h2>
+      <p style="color:#6b7280;font-size:0.9rem;">
+        Opérations de préparation et de maintenance du présentoir.
+      </p>
+    </div>
+
+    <div>
+      {% if presentoir.owner_client_id %}
+        <a
+          href="/superuser/presentoirs/{{ presentoir.id }}/taguer-produits"
+          class="btn btn-primary"
+          style="display:inline-flex; align-items:center; gap:6px;"
+        >
+          🏷️ Taguer les produits
+        </a>
+      {% else %}
+        <span style="color:#9ca3af;font-size:0.9rem;">
+          ⚠️ Définissez d’abord un propriétaire pour taguer les produits.
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h2>Informations</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:24px;">
+      <div>
+        <div><strong>Code</strong> : {{ presentoir.code }}</div>
+        <div><strong>Nom</strong> : {{ presentoir.name or "-" }}</div>
+
+        <div>
+          <strong>ID Propriétaire (owner)</strong> :
+          {{ presentoir.owner_client_id or "-" }}
+        </div>
+        <div>
+          <strong>Propriétaire</strong> :
+          {{ owner_label or "-" }}
+        </div>
+
+        <div>
+          <strong>ID Client final</strong> :
+          {{ presentoir.end_client_id or "-" }}
+        </div>
+        <div>
+          <strong>Client final</strong> :
+          {{ end_client_label or "-" }}
+        </div>
+
+        <div><strong>Emplacement</strong> : {{ presentoir.location or "-" }}</div>
+      </div>
+      <div>
+        <div><strong>Tunnel</strong> :
+          {% if presentoir.tunnel_url %}
+            <a href="{{ presentoir.tunnel_url }}" target="_blank">{{ presentoir.tunnel_url }}</a>
+          {% else %}
+            -
+          {% endif %}
+        </div>
+        <div><strong>IP locale</strong> : {{ presentoir.last_ip or "-" }}</div>
+        <div><strong>Firmware</strong> : {{ presentoir.firmware_version or "-" }}</div>
+        <div><strong>Produits présents (compteur)</strong> :
+          <span id="live-products-count">{{ presentoir.current_num_products or 0 }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# === AFFECTATIONS === #}
+  <div class="card" style="margin-top:16px;">
+    <h2>Affectations</h2>
+    <p style="color:#6b7280;font-size:0.9rem;">
+      Le propriétaire correspond au client qui achète/loue le présentoir.<br>
+      Le client final est le point de vente où le présentoir est physiquement installé.
+    </p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-end;">
+      <div>
+        <label for="ownerSelect" style="display:block;font-weight:600;margin-bottom:4px;">
+          Propriétaire du présentoir
+        </label>
+        <select id="ownerSelect"
+                data-current-owner-id="{{ presentoir.owner_client_id or '' }}"
+                style="min-width:260px;padding:4px 8px;">
+          <option value="">— Aucun propriétaire —</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="endClientSelect" style="display:block;font-weight:600;margin-bottom:4px;">
+          Client final (installation)
+        </label>
+        <select id="endClientSelect"
+                data-current-end-client-id="{{ presentoir.end_client_id or '' }}"
+                style="min-width:260px;padding:4px 8px;">
+          <option value="">— Aucun client final —</option>
+        </select>
+      </div>
+
+      <div id="presentoirAssignStatus" style="color:#6b7280;font-size:0.85rem;"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px; display:flex; justify-content:space-between; gap:24px;">
+    <div>
+      <h3>Statut du présentoir</h3>
+      <p>
+        {% set status = computed_status or "INCONNU" %}
+
+		{% if status == "ONLINE" %}
+		  <span id="live-status-badge"
+				style="display:inline-block;padding:2px 8px;border-radius:999px;
+					   background:#dcfce7;color:#166534;font-size:0.85rem;">
+			● Online
+		  </span>
+		{% elif status == "OFFLINE" %}
+		  <span id="live-status-badge"
+				style="display:inline-block;padding:2px 8px;border-radius:999px;
+					   background:#fee2e2;color:#991b1b;font-size:0.85rem;">
+			● Offline
+		  </span>
+		{% elif status == "ERROR" %}
+		  <span id="live-status-badge"
+				style="display:inline-block;padding:2px 8px;border-radius:999px;
+					   background:#fef3c7;color:#92400e;font-size:0.85rem;">
+			● Erreur
+		  </span>
+		{% else %}
+		  <span id="live-status-badge"
+				style="display:inline-block;padding:2px 8px;border-radius:999px;
+					   background:#e5e7eb;color:#374151;font-size:0.85rem;">
+			● Inconnu
+		  </span>
+		{% endif %}
+
+      </p>
+      <p>
+        Dernier heartbeat :
+        <span id="live-heartbeat">
+          {{ presentoir.last_seen_at or "—" }}
+        </span>
+      </p>
+      <p style="color:#6b7280;font-size:0.85rem;">
+        Mise à jour automatique toutes les 5 secondes.
+      </p>
+    </div>
+
+    <div>
+      <h3>Dernier événement</h3>
+      {% if last_event %}
+        <p id="live-last-event">
+          {{ last_event.occurred_at }} –
+          {{ "Retrait" if last_event.event_type == "removal" else "Retour" }}
+          (SKU {{ last_event.sku or "-" }}, EPC {{ last_event.epc }})
+        </p>
+      {% else %}
+        <p id="live-last-event">Aucun événement enregistré pour le moment.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Produits présents sur le présentoir</h3>
+    <p style="color:#6b7280;font-size:0.9rem;">
+      Calcul basé sur les tags RFID actuellement chargés (DisplayItem actifs).
+    </p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Quantité</th>
+          <th>Dernier mouvement</th>
+        </tr>
+      </thead>
+      <tbody id="live-sku-body">
+        {% if sku_summary %}
+          {% for row in sku_summary %}
+            <tr>
+              <td>{{ row.sku }}</td>
+              <td>{{ row.count }}</td>
+              <td>{{ row.last_ts }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="3">Aucun produit présent sur le présentoir.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Historique des événements</h3>
+    <p style="color:#6b7280;font-size:0.9rem;">
+      Derniers événements enregistrés pour ce présentoir (max 50).
+    </p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>SKU</th>
+          <th>EPC</th>
+        </tr>
+      </thead>
+      <tbody id="live-events-body">
+        {% if events %}
+          {% for ev in events %}
+            <tr>
+              <td>{{ ev.occurred_at }}</td>
+              <td>
+                {% if ev.event_type == "removal" %}
+                  Retrait
+                {% elif ev.event_type == "return" or ev.event_type == "return_" %}
+                  Retour
+                {% else %}
+                  {{ ev.event_type }}
+                {% endif %}
+              </td>
+              <td>{{ ev.sku or "-" }}</td>
+              <td>{{ ev.epc }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4">Aucun événement pour ce présentoir.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Script LIVE (polling toutes les 5s) #}
+  <script>
+    (function () {
+      const presentoirId = {{ presentoir.id }};
+      const TOKEN = localStorage.getItem("token");
+
+      async function refreshPresentoir() {
+        try {
+          const headers = { "Accept": "application/json" };
+          if (TOKEN) headers["Authorization"] = "Bearer " + TOKEN;
+
+          const res = await fetch(
+            `/api-zenhub/superuser/presentoirs/${presentoirId}/live`,
+            { headers }
+          );
+          if (!res.ok) return;
+
+          const data = await res.json();
+          // (logique live inchangée)
+        } catch (err) {
+          console.error("[PRESENTOIR_LIVE]", err);
+        }
+      }
+
+      refreshPresentoir();
+      setInterval(refreshPresentoir, 5000);
+    })();
+
+    window.PFM_PRESENTOIR_ID = {{ presentoir.id }};
+  </script>
+
+  <script src="/static/superuser/presentoir_detail.js?v=6"></script>
+{% endblock %}

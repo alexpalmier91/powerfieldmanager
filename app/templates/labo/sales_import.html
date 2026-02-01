@@ -1,0 +1,183 @@
+{% extends "_layouts/app.html" %}
+{% block title %}Import des ventes{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2>Import des ventes labo</h2>
+    <p class="text-muted">
+      Importez vos documents de ventes (factures FA…, commandes CO…, avoirs AV/AW…) au format Excel ou CSV.
+    </p>
+  </div>
+
+  <div class="card-body">
+    <form id="sales-import-form">
+      <div class="form-group mb-3">
+        <label for="file">Fichier de ventes (.xlsx / .csv)</label>
+        <input type="file" class="form-control" id="file" name="file" required>
+      </div>
+
+      <button type="submit" id="btn-import" class="btn btn-primary">
+        📥 Importer
+      </button>
+
+      <span id="sales-import-loader" class="ms-2" style="display:none;">
+        ⏳ Importation en cours…
+      </span>
+    </form>
+
+    <div id="sales-import-result" class="mt-4" style="display:none;">
+      <h5>Résultat de l’import</h5>
+      <pre id="sales-import-json" class="bg-light p-2 small"></pre>
+    </div>
+
+    <div id="sales-import-warnings" class="mt-4" style="display:none;">
+      <h6>Avertissements</h6>
+      <ul id="sales-import-warnings-list" class="small"></ul>
+    </div>
+
+    <!-- Aide : colonnes attendues dans le fichier Excel / CSV -->
+    <div class="mt-4">
+      <h5>Colonnes attendues dans le fichier de ventes</h5>
+      <p class="text-muted small">
+        Les noms ci-dessous correspondent aux colonnes internes. Votre fichier peut utiliser des intitulés proches
+        (ex. <code>Num commande</code> sera mappé vers <code>order_number</code>, <code>Code client</code> vers <code>client_code</code>, etc.).
+      </p>
+
+      <h6>Colonnes obligatoires</h6>
+      <table class="table table-sm table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 220px;">Nom de colonne attendu</th>
+            <th>Description</th>
+            <th>Exemples d’intitulés acceptés</th>
+          </tr>
+        </thead>
+        <tbody class="small">
+          <tr>
+            <td><code>order_number</code></td>
+            <td>
+              Numéro du document (facture, bon de commande, avoir).<br>
+              Permet d’identifier de façon unique chaque document.
+            </td>
+            <td>
+              <code>Order number</code>, <code>Num commande</code>, <code>Commande</code>, <code>N° commande</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>order_date</code></td>
+            <td>
+              Date du document (date de facture ou de commande).<br>
+              Format conseillé : <code>JJ/MM/AAAA</code> ou <code>AAAA-MM-JJ</code>.
+            </td>
+            <td>
+              <code>Order date</code>, <code>Date</code>, <code>Date commande</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>client_code</code></td>
+            <td>
+              Code client chez le labo (doit correspondre au code client utilisé dans ZenHub pour ce labo).<br>
+              C’est ce code qui permet de rattacher la vente au bon client.
+            </td>
+            <td>
+              <code>Client code</code>, <code>Code client</code>, <code>Code labo</code>, <code>Code labo client</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>sku</code></td>
+            <td>
+              Référence produit (SKU) utilisée dans ZenHub pour ce labo.<br>
+              Doit correspondre exactement aux références de vos fiches produits.
+            </td>
+            <td>
+              <code>SKU</code>, <code>Référence</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>qty</code></td>
+            <td>
+              Quantité vendue pour la ligne de document.
+            </td>
+            <td>
+              <code>Qty</code>, <code>Quantité</code>, <code>Qte</code>, <code>Qté</code>…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h6 class="mt-3">Colonnes optionnelles (fortement recommandées)</h6>
+      <table class="table table-sm table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 220px;">Nom de colonne attendu</th>
+            <th>Description</th>
+            <th>Exemples d’intitulés acceptés</th>
+          </tr>
+        </thead>
+        <tbody class="small">
+          <tr>
+            <td><code>delivery_date</code></td>
+            <td>
+              Date de livraison prévue ou réelle.<br>
+              Si absente, seule la date de document sera utilisée.
+            </td>
+            <td>
+              <code>Delivery date</code>, <code>Date livraison</code>, <code>Date de livraison</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>price_ht</code></td>
+            <td>
+              Prix unitaire HT de la ligne.<br>
+              Si <code>total_ht</code> est présent, les deux seront contrôlés.
+            </td>
+            <td>
+              <code>Price HT</code>, <code>Prix HT</code>, <code>PU HT</code>, <code>Unit HT</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>total_ht</code></td>
+            <td>
+              Total HT de la ligne (quantité × prix).<br>
+              Si absent, il sera recalculé à partir de <code>qty</code> et <code>price_ht</code>.
+            </td>
+            <td>
+              <code>Total HT</code>, <code>Montant HT</code>, <code>Ligne HT</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>representant</code></td>
+            <td>
+              Nom de l’agent / commercial ayant généré la vente.<br>
+              Sert à rattacher le document à un agent si possible (résolution par nom).
+            </td>
+            <td>
+              <code>Représentant</code>, <code>Agent</code>, <code>Commercial</code>, <code>Nom</code>…
+            </td>
+          </tr>
+          <tr>
+            <td><code>ean13</code></td>
+            <td>
+              Code-barres du produit (EAN-13).<br>
+              Optionnel, utilisé uniquement pour information.
+            </td>
+            <td>
+              <code>EAN</code>, <code>EAN13</code>, <code>Code barre</code>…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="text-muted small mb-0">
+        Si vos intitulés de colonnes ne correspondent pas exactement, l’outil essaiera de les
+        reconnaître automatiquement (ex. <code>Num commande</code> → <code>order_number</code>,
+        <code>Code client</code> → <code>client_code</code>, etc.).<br>
+        En cas de doute, n’hésitez pas à demander un modèle de fichier.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', path='/labo/pages/sales_import.js') }}"></script>
+{% endblock %}

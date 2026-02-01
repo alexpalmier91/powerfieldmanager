@@ -1,0 +1,609 @@
+/* app/static/agent/pages/labos/catalog.css */
+
+/* ====== Theme "PFM clean" ====== */
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-2: #1d4ed8;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --shadow: 0 12px 30px rgba(15, 23, 42, .06);
+  --radius: 14px;
+}
+
+.agent-labos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.agent-catalog-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.agent-catalog-actions input[type="text"],
+.agent-catalog-actions select {
+  max-width: 220px;
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.filters input[type="number"],
+.filters input[type="text"] {
+  max-width: 140px;
+}
+
+.agent-catalog-card {
+  padding: 0;
+}
+
+.catalog {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.catalog th,
+.catalog td {
+  border-bottom: 1px solid #e3e3e3;
+  padding: 0.4rem 0.5rem;
+  vertical-align: top;
+  font-size: 0.9rem;
+}
+
+.catalog thead th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.catalog th[data-sort] {
+  cursor: pointer;
+  position: relative;
+}
+
+.catalog th[data-sort][data-dir="asc"]::after {
+  content: "▲";
+  position: absolute;
+  right: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.catalog th[data-sort][data-dir="desc"]::after {
+  content: "▼";
+  position: absolute;
+  right: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.catalog td.num {
+  text-align: right;
+}
+
+.catalog td.thumb-cell {
+  width: 70px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.catalog img.product-thumb {
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Commission & tiers price */
+
+.catalog td.commission-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.catalog td.tiers-cell {
+  font-size: 0.78rem;
+  color: #555;
+}
+
+.catalog td.tiers-cell .tiers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.catalog td.tiers-cell .tiers-line {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Skeleton & empty */
+
+.skeleton,
+.empty {
+  text-align: center;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Infinite scroll : léger padding bas pour ne pas “coller” au footer */
+body {
+  scroll-behavior: smooth;
+}
+
+/* app/static/agent/pages/labos/catalog.css */
+
+.agent-labos {
+  padding: 1.5rem;
+  background: #f5f7fb;
+}
+
+.agent-catalog-card {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.agent-catalog-card .card-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.agent-catalog-card .card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Toolbar & filtres */
+
+.agent-labos .toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.agent-labos .toolbar select {
+  min-width: 180px;
+}
+
+.agent-labos .toolbar .total strong {
+  font-weight: 600;
+}
+
+.agent-labos .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.agent-labos .filters > * {
+  flex: 0 1 auto;
+}
+
+.agent-labos .filters input.form-control-sm,
+.agent-labos .filters select.form-select-sm {
+  min-width: 140px;
+}
+
+.agent-labos .filters .checkbox {
+  margin-left: 0.25rem;
+}
+
+/* Table catalogue */
+
+.agent-catalog-wrapper {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+}
+
+.catalog {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.catalog thead th {
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.catalog th,
+.catalog td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.catalog tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Colonnes */
+
+.thumb-cell {
+  width: 70px;
+  text-align: center;
+}
+
+.product-thumb {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  border-radius: 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.product-thumb.placeholder {
+  display: inline-block;
+}
+
+.sku-cell {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.name-cell {
+  max-width: 420px;
+}
+
+.name-cell {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Badge actif / inactif */
+
+.badge-active,
+.badge-inactive {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Commission & tiers */
+
+.commission-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tiers-cell {
+  max-width: 260px;
+}
+
+.tiers-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  margin: 0.05rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.tiers-badge.tiers-none {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+/* Pager */
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.pager-info {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+/* Skeleton / empty */
+
+.skeleton,
+.empty {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+.agent-labos .toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .75rem;
+  gap: 1rem;
+}
+
+.agent-labos .toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+.agent-labos .toolbar-right {
+  min-width: 260px;
+}
+
+.agent-labos .toolbar-right input {
+  width: 100%;
+}
+
+
+
+/* Espacement cohérent entre les champs */
+#catalogFilters .form-control-sm,
+#catalogFilters .form-select-sm {
+    min-width: 140px;
+}
+
+/* Sur mobile, les filtres doivent passer en colonne */
+@media (max-width: 768px) {
+    #catalogFilters {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .main-search {
+        width: 100% !important;
+        max-width: none !important;
+    }
+}
+
+input {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.stock-dot{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  vertical-align:middle;
+}
+
+.stock-ok{ background:#22c55e; } /* vert */
+.stock-ko{ background:#ef4444; } /* rouge */
+
+.stock-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}
+.stock-ok{background:#22c55e}
+.stock-ko{background:#ef4444}
+
+/* partie commande
+
+/* Cards */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Titles */
+.agent-new-order h2{
+  font-size: 1.05rem;
+  letter-spacing: .2px;
+}
+
+/* Inputs */
+.agent-new-order input[type="text"],
+.agent-new-order input[type="date"],
+.agent-new-order select,
+.agent-new-order textarea{
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease;
+  background: #fff;
+}
+
+.agent-new-order input:focus,
+.agent-new-order select:focus,
+.agent-new-order textarea:focus{
+  border-color: rgba(37,99,235,.45) !important;
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+}
+
+/* Buttons */
+.agent-new-order button{
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: transform .05s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.agent-new-order button:hover{
+  background: #f8fafc;
+  box-shadow: 0 8px 18px rgba(15,23,42,.06);
+}
+
+.agent-new-order button:active{
+  transform: translateY(1px);
+}
+
+/* Primary CTA */
+#btn-submit{
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+#btn-submit:hover{
+  background: var(--primary-2);
+  border-color: var(--primary-2);
+}
+
+/* Catalogue container */
+#catalog-table{
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  background: #fff;
+}
+
+/* Table look */
+#catalog-table table{
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+#catalog-table thead th{
+  position: sticky;
+  top: 0;
+  background: #fbfdff;
+  z-index: 2;
+  font-size: .85rem;
+  color: var(--muted);
+  text-transform: none;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+#catalog-table tbody tr:hover{
+  background: #f8fafc;
+}
+
+/* Make images nicer */
+#catalog-table img{
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 14px rgba(15,23,42,.06);
+}
+
+/* Cart right side */
+#cart{
+  border-radius: var(--radius);
+}
+
+#cart-lines > div{
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Toast */
+#cart-success{
+  background: rgba(22,163,74,.08);
+  border: 1px solid rgba(22,163,74,.25);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+#cart-error{
+  background: rgba(220,38,38,.08);
+  border: 1px solid rgba(220,38,38,.25);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+/* Layout spacing */
+.agent-new-order{
+  gap: 18px !important;
+}
+
+/* ===============================
+   Boutons "Ajouter" / "Ajouter au panier"
+   =============================== */
+
+/* Bouton Ajouter dans le catalogue */
+#catalog-table .btn-add,
+#catalog-table button.btn-add,
+button.btn-add {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Hover */
+#catalog-table .btn-add:hover,
+button.btn-add:hover {
+  background: var(--primary-2);
+  border-color: var(--primary-2);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .25);
+}
+
+/* Active (clic) */
+#catalog-table .btn-add:active,
+button.btn-add:active {
+  transform: translateY(1px);
+}
+
+/* Désactivé (si un jour tu l'utilises) */
+#catalog-table .btn-add:disabled {
+  background: #94a3b8;
+  border-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ===============================
+   Bouton Ajouter – priorité haute
+   =============================== */
+
+.agent-new-order #catalog-table button.btn-add {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.agent-new-order #catalog-table button.btn-add:hover {
+  background: var(--primary-2);
+  border-color: var(--primary-2);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .25);
+}
+
+.agent-new-order #catalog-table button.btn-add:active {
+  transform: translateY(1px);
+}

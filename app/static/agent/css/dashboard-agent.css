@@ -1,0 +1,340 @@
+/* ==========================================================================
+   DASHBOARD AGENT – GLOBAL STYLE
+   Appliqué à TOUTES les pages du dashboard agent
+   ========================================================================== */
+
+/* ------------------------------
+   1. Reset & Font
+--------------------------------*/
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: "Inter", Arial, sans-serif;
+    background: #f5f6fa;
+    color: #333;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* ------------------------------
+   2. Layout Général
+--------------------------------*/
+.agent-wrapper {
+    padding: 1.5rem;
+    width: 100%;
+}
+
+/* ------------------------------
+   3. Titres
+--------------------------------*/
+h1, h2, h3 {
+    color: #222;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 1.85rem;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.45rem;
+    margin-bottom: 0.8rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+    margin-top: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ------------------------------
+   4. Boutons
+--------------------------------*/
+.btn {
+    display: inline-block;
+    padding: 0.55rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity .2s;
+}
+
+.btn:hover {
+    opacity: 0.85;
+}
+
+.btn-primary {
+    background: #0067c0;
+    color: white;
+}
+
+.btn-secondary {
+    background: #ddd;
+    color: #333;
+}
+
+.btn-danger {
+    background: #d94747;
+    color: white;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ------------------------------
+   5. Formulaires
+--------------------------------*/
+input, select, textarea {
+    width: 100%;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #0077ff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,.15);
+    outline: none;
+}
+
+label {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Espacement entre les champs */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: .7rem;
+}
+
+.form-row > div {
+    flex: 1 1 260px;
+    min-width: 220px;
+}
+
+/* ------------------------------
+   6. Zone carte (panels, bloc info)
+--------------------------------*/
+.panel {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e1e1e1;
+    box-shadow: 0 2px 5px rgba(0,0,0,.04);
+    margin-bottom: 1rem;
+}
+
+/* ------------------------------
+   7. Tableaux
+--------------------------------*/
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+table th {
+    background: #f0f3f8;
+    text-align: left;
+    padding: 0.7rem;
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    cursor: default;
+}
+
+table th[data-sort] {
+    cursor: pointer;
+}
+
+table th[data-sort]:hover {
+    background: #e2e8f0;
+}
+
+table td {
+    padding: 0.65rem;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+}
+
+td.num {
+    text-align: right;
+}
+
+.thumb-cell {
+    width: 80px;
+}
+
+.product-thumb {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #fafafa;
+    border: 1px solid #eee;
+}
+
+/* ------------------------------
+   8. Messages (empty, loading…)
+--------------------------------*/
+.empty, .skeleton {
+    margin-top: 1rem;
+    text-align: center;
+    padding: 1rem;
+    font-size: 15px;
+    color: #666;
+}
+
+/* ------------------------------
+   9. Pagination
+--------------------------------*/
+.pager {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.pager-info {
+    margin: 0 .5rem;
+    font-size: 14px;
+}
+
+/* ------------------------------
+   10. Responsive
+--------------------------------*/
+@media (max-width: 900px) {
+    table td:nth-child(2),
+    table th:nth-child(2), /* SKU */
+    table td:nth-child(4),
+    table th:nth-child(4)  /* Nom */
+    {
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 700px) {
+    .form-row > div {
+        min-width: 100%;
+    }
+
+    .agent-clients-header,
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+}
+
+
+/* Import/Export panel */
+.ix-card{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  background:#fff;
+  padding:14px;
+}
+
+.ix-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.ix-sub{
+  margin:4px 0 0;
+  color:#6b7280;
+  font-size:0.92rem;
+}
+
+.ix-close{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:10px;
+  padding:6px 10px;
+  cursor:pointer;
+}
+
+.ix-grid{
+  display:grid;
+  grid-template-columns: 1.2fr 0.8fr 1.6fr;
+  gap:12px;
+  align-items:start;
+}
+
+@media (max-width: 980px){
+  .ix-grid{ grid-template-columns: 1fr; }
+}
+
+.ix-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.ix-label{
+  font-size:13px;
+  color:#374151;
+  font-weight:600;
+}
+
+.ix-req{
+  color:#b91c1c;
+  font-weight:800;
+}
+
+.ix-hint{
+  color:#6b7280;
+  font-size:12.5px;
+}
+
+.ix-upload{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.ix-required{
+  margin-top:12px;
+  padding:10px;
+  background:#f9fafb;
+  border:1px dashed #e5e7eb;
+  border-radius:10px;
+  color:#374151;
+  font-size:0.92rem;
+}
+
+.ix-feedback{
+  margin-top:12px;
+}
+
+/* Petit confort: bouton Import/Export en "secondary" plus visible */
+#btnToggleClientsImportExport.btn.btn-secondary{
+  border:1px solid #d1d5db;
+  background:#fff;
+}

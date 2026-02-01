@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sandbox — Path Bézier + Toolbar (Option A)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background:#f3f4f6; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      display:flex; gap:8px; align-items:center;
+      padding: 10px 12px; background:#111827; color:#fff;
+    }
+    .btn {
+      border:0; background:#2563eb; color:#fff; padding:8px 10px; border-radius:8px;
+      font-weight:600; cursor:pointer;
+    }
+    .btn:active { transform: translateY(1px); }
+    .wrap { padding: 12px; }
+
+    .page {
+      width: 980px; height: 620px;
+      margin: 12px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Overlay root */
+    #pageOverlay{
+      position:absolute; inset:0;
+      pointer-events:auto;
+    }
+
+    /* Host toolbar (pointer-events:none => Bridge va portal body si besoin) */
+    #toolbarHost{
+      position:absolute; inset:0;
+      z-index:50;
+      pointer-events:none;
+    }
+    #toolbarHost .tt-toolbar{ pointer-events:auto; }
+
+    .hint {
+      width: 980px; margin: 0 auto; color:#374151; font-size: 13px;
+    }
+    textarea {
+      width: 980px; height: 120px; display:block; margin: 12px auto;
+      border:1px solid #e5e7eb; border-radius: 10px; padding:10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <button class="btn" id="btnAdd">Ajouter ligne (Bézier)</button>
+    <div style="opacity:.9;font-size:13px">
+      Drag path = déplacer objet • Drag carrés = anchors • Drag ronds = poignées • Delete = supprimer objet • Double-clic = éditer texte
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="page">
+      <div id="pageOverlay"></div>
+      <div id="toolbarHost"></div>
+    </div>
+
+    <div class="hint">Debug (state.objects)</div>
+    <textarea id="dbg" spellcheck="false" placeholder="dump..."></textarea>
+  </div>
+
+  <!-- =========================================================
+       Option A (comme ton texte cercle)
+       1) Color picker = classic IIFE
+       2) Font picker = ESM -> exposé en global
+       3) Loader classic -> charge toolbar + bridge + text_path
+       ========================================================= -->
+
+  <!-- 1) Color picker classic -->
+  <script src="../color_picker_tools.js?v=1"></script>
+
+  <!-- 2) Font picker ESM -> global -->
+  <script type="module">
+    import * as FontPickerTools from "../font_picker_tools.js?v=1";
+    window.FontPickerTools = FontPickerTools;
+    window.__PICKERS_READY__ = true;
+    console.log("[sandbox] FontPickerTools ready (module)", !!window.FontPickerTools);
+  </script>
+
+  <!-- 3) Loader classic -->
+  <script>
+    (function () {
+      "use strict";
+
+      function loadClassic(src) {
+        return new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = src;
+          s.async = false;
+          s.onload = () => resolve(true);
+          s.onerror = (e) => reject(e);
+          document.head.appendChild(s);
+        });
+      }
+
+      function waitFor(check, timeout = 8000) {
+        const t0 = performance.now();
+        return new Promise((resolve, reject) => {
+          (function tick() {
+            try { if (check()) return resolve(true); } catch (_) {}
+            if (performance.now() - t0 > timeout) return reject(new Error("waitFor timeout"));
+            setTimeout(tick, 20);
+          })();
+        });
+      }
+
+      (async () => {
+        // attendre globals pickers
+        await waitFor(() => window.ColorPickerTools && window.__PICKERS_READY__ && window.FontPickerTools, 8000);
+        console.log("[sandbox] pickers globals OK", !!window.ColorPickerTools, !!window.FontPickerTools);
+
+        // charger toolbar stack (classic)
+        await loadClassic("../text_toolbar_tools.js?v=1");
+        await loadClassic("../text_toolbar_bridge.js?v=1");
+
+        // charger controller path (classic)
+        await loadClassic("../text_path_tools.js?v=1");
+
+        window.__SANDBOX_STACK_READY__ = true;
+        console.log("[sandbox] stack READY");
+      })().catch((e) => console.error("[sandbox loader] failed", e));
+    })();
+  </script>
+
+  <!-- Boot -->
+  <script>
+    (function () {
+      "use strict";
+
+      const overlay = document.querySelector("#pageOverlay");
+      const toolbarHost = document.querySelector("#toolbarHost");
+      const dbg = document.querySelector("#dbg");
+
+      function dump(ctrl){
+        try { dbg.value = JSON.stringify(ctrl._state.objects, null, 2); } catch(e){}
+      }
+
+      function waitFor(check, { timeout = 8000, step = 20 } = {}) {
+        const t0 = performance.now();
+        return new Promise((resolve, reject) => {
+          (function tick() {
+            try { if (check()) return resolve(true); } catch (_) {}
+            if (performance.now() - t0 > timeout) return reject(new Error("waitFor timeout"));
+            setTimeout(tick, step);
+          })();
+        });
+      }
+
+      async function boot() {
+        // attendre stack
+        try {
+          await waitFor(() => window.__SANDBOX_STACK_READY__ === true, { timeout: 10000 });
+          await waitFor(() => typeof window.createTextPathController === "function", { timeout: 6000 });
+        } catch (e) {
+          console.error("[sandbox] stack pas prête", e);
+          return;
+        }
+
+        const ctrl = window.createTextPathController({ rootEl: overlay });
+        ctrl.attach();
+        window.tp = ctrl;
+
+        // toolbar (si ton text_path_tools.js expose attachTextToolbarBridge)
+        let tb = null;
+        if (typeof ctrl.attachTextToolbarBridge === "function" && window.TextToolbarBridge) {
+          try {
+            tb = ctrl.attachTextToolbarBridge({ hostEl: toolbarHost });
+            window.tb = tb;
+            tb && tb.update && tb.update();
+            console.log("[sandbox] toolbar bridged", tb);
+          } catch (e) {
+            console.warn("[sandbox] attachTextToolbarBridge error", e);
+          }
+        } else {
+          console.warn("[sandbox] toolbar non branchée (ctrl.attachTextToolbarBridge manquant).");
+        }
+
+        document.querySelector("#btnAdd").addEventListener("click", () => {
+          ctrl.insertTextPath();
+          dump(ctrl);
+          try { tb && tb.update && tb.update(); } catch (_) {}
+        });
+
+        // debug live
+        setInterval(() => dump(ctrl), 500);
+
+        console.log("[sandbox] READY -> window.tp / window.tb");
+      }
+
+      queueMicrotask(() => setTimeout(boot, 0));
+    })();
+  </script>
+
+</body>
+</html>

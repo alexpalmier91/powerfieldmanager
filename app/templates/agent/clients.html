@@ -1,0 +1,261 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}{{ _("agent.clients.title") }}{% endblock %}
+{% block breadcrumb %}{{ _("agent.clients.breadcrumb") }}{% endblock %}
+
+{% block content %}
+<div id="clientsView" class="agent-wrapper">
+
+  <!-- HEADER -->
+   <!-- HEADER -->
+  <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div>
+      <h2>👥 {{ _("agent.clients.title") }}</h2>
+      <p style="color:#6b7280;margin-top:4px;">
+        {{ _("agent.clients.subtitle") }}
+      </p>
+    </div>
+
+	<div style="display:flex; gap:8px; align-items:center;">
+	  <button
+		id="btnToggleClientsImportExport"
+		class="btn btn-secondary">
+		⇅ Import / Export
+	  </button>
+
+	  <button id="btnAddClient" class="btn btn-primary">
+		➕ Ajouter un client
+	  </button>
+	</div>
+
+  </div>
+
+  <!-- PANEL IMPORT/EXPORT (hidden by default) -->
+ <!-- IMPORT / EXPORT CLIENTS (AGENT) -->
+<div id="clientsImportExportCard"
+     class="panel"
+     style="display:none; margin-bottom:16px;">
+
+  <h3 style="margin:0 0 6px;">📥 Import / 📤 Export clients</h3>
+  <p style="color:#6b7280; font-size:0.95rem; margin-bottom:12px;">
+    Exportez vos clients en Excel ou importez une liste (.xlsx).
+    L’import met à jour les clients existants ou en crée de nouveaux.
+  </p>
+
+  <div class="ix-grid">
+
+    <!-- EXPORT -->
+    <div class="ix-field">
+      <div class="ix-label">Exporter</div>
+      <button id="btnExportClientsXlsx" class="btn btn-primary">
+        Exporter (Excel)
+      </button>
+      <div class="ix-hint">
+        Fichier .xlsx trié par société, clients liés à votre compte agent.
+      </div>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="ix-field">
+      <div class="ix-label">
+        Importer <span class="ix-req">*</span>
+      </div>
+
+      <div class="ix-upload">
+        <input
+          type="file"
+          id="inputImportClientsXlsx"
+          accept=".xlsx"
+        />
+        <button
+          id="btnImportClientsXlsx"
+          class="btn btn-secondary">
+          Importer
+        </button>
+      </div>
+
+      <div class="ix-hint">
+        Format accepté : <strong>.xlsx</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Champs requis -->
+  <div class="ix-required">
+    <strong>Champs requis dans le fichier :</strong>
+    <ul style="margin:6px 0 0 18px;">
+      <li><code>nom_societe</code> (obligatoire)</li>
+    </ul>
+    <div style="margin-top:6px;">
+      Les autres colonnes sont optionnelles (email, téléphone, adresse…).
+    </div>
+  </div>
+
+  <!-- Feedback -->
+  <div id="clientsImportExportFeedback" class="ix-feedback"></div>
+</div>
+
+
+  <!-- FILTRE + LISTING -->
+  <div class="panel">
+
+    {# ✅ Bandeau de confirmation création client #}
+    <div id="clientCreateSuccess"
+         style="display:none;margin:0 0 0.75rem 0;padding:8px 12px;border-radius:6px;
+                background:#dcfce7;color:#166534;border:1px solid #86efac;font-size:0.9rem;">
+      Client créé avec succès.
+    </div>
+
+    <div class="filters" style="margin-bottom:1rem;">
+      <label for="agentClientsSearch">
+        {{ _("agent.clients.search_label") }}
+      </label>
+      <input id="agentClientsSearch"
+             type="search"
+             placeholder="{{ _('agent.clients.search_placeholder') }}"
+             class="input">
+    </div>
+
+    <div id="agentClients"></div>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL – CREATION CLIENT
+=============================================================== -->
+
+
+
+
+
+<div id="clientCreateModal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h2>➕ Nouveau client</h2>
+
+    <form id="clientCreateForm" style="margin-top:1rem;">
+
+      <!-- Société -->
+      <h3>Informations société</h3>
+      <div class="form-row">
+        <div>
+          <label>Nom de la société *</label>
+          <input name="company_name" required>
+        </div>
+
+        <div>
+          <label>Contact</label>
+          <input name="contact">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Adresse</label>
+          <input name="address1">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Code postal</label>
+          <input name="postcode">
+        </div>
+        <div>
+          <label>Ville</label>
+          <input name="city">
+        </div>
+        <div>
+          <label>Pays</label>
+          <input name="country">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Email *</label>
+          <input type="email" name="email" required>
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input name="phone">
+        </div>
+        <div>
+          <label>Groupement</label>
+          <input name="groupement">
+        </div>
+      </div>
+
+      <h3>Informations bancaires</h3>
+      <div class="form-row">
+        <div>
+          <label>IBAN</label>
+          <input name="iban">
+        </div>
+        <div>
+          <label>BIC</label>
+          <input name="bic">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Conditions de paiement</label>
+          <input name="payment_terms">
+        </div>
+        <div>
+          <label>Crédit autorisé</label>
+          <input name="credit_limit" type="number" step="0.01">
+        </div>
+      </div>
+
+      <!-- ERREUR -->
+      <div id="clientCreateError" style="color:#d33;margin-top:.5rem;"></div>
+
+      <!-- ACTIONS -->
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;gap:8px;">
+        <button type="button" class="btn btn-secondary" id="btnCancelCreateClient">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Créer le client
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="/static/agent/css/dashboard-agent.css?v3">
+
+<style>
+/* === Modal générique === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+.modal {
+  background: #fff;
+  width: 650px;
+  max-width: 95%;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0,0,0,.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+</style>
+
+<script type="module" src="/static/agent/agent_clients.js"></script>
+<script type="module" src="/static/agent/pages/clients/new-client.js"></script>
+<script type="module" src="/static/agent/agent_clients_import_export.js?v2"></script>
+{% endblock %}

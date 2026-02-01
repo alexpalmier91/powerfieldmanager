@@ -1,0 +1,47 @@
+{# app/templates/labo/marketing_documents.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Documents commerciaux{% endblock %}
+{% block breadcrumb %}Documents commerciaux{% endblock %}
+
+{% block content %}
+  <h1>Documents commerciaux</h1>
+
+  <div class="card" style="margin-top:16px;">
+    <h2>Uploader un PDF</h2>
+
+    <div id="marketingDocsFeedback" style="margin:8px 0; color:#b91c1c;"></div>
+
+    <form id="marketingDocUploadForm" style="display:flex; flex-direction:column; gap:10px; max-width:620px;">
+      <input type="text" name="title" placeholder="Nom du document" required />
+      <input type="text" name="doc_type" placeholder="Type (ex: catalogue, offre_promotionnelle)" />
+      <textarea name="comment" placeholder="Commentaire / description" rows="3"></textarea>
+      <input type="file" name="file" accept="application/pdf" required />
+      <button type="submit" class="btn btn-primary">Uploader</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h2>Mes documents</h2>
+
+    <div style="overflow:auto;">
+      <table class="table" style="width:100%; min-width:980px;">
+        <thead>
+          <tr>
+            <th style="width:120px;">Aperçu</th>
+            <th>Nom</th>
+            <th style="width:160px;">Type</th>
+            <th>Commentaire</th>
+            <th style="width:180px;">Date</th>
+            <th style="width:240px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="marketingDocsTbody">
+          <tr><td colspan="6" style="color:#6b7280;">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/static/labo/marketing_documents.js?v9"></script>
+{% endblock %}

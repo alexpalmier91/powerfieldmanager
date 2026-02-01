@@ -1,0 +1,243 @@
+<!-- app/static/labo/editor/sandbox/sandbox_shape_block.html
+     Sandbox autonome: Bloc Shapes avancé (insert / drag / resize / rotate / toolbar)
+     Aucun backend / aucune API — draft mock in-memory
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sandbox — Shape Block Tools</title>
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#fff;
+      --border: rgba(17,24,39,0.12);
+      --text:#111827;
+      --muted:#6b7280;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius: 14px;
+      --blue: #2563eb;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--text); }
+    body{ background: var(--bg); }
+
+    .app{
+      height: 100%;
+      display: grid;
+      grid-template-columns: 260px 1fr 360px;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .panel{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .sidebar h2{
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    .btn{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: .12s ease;
+    }
+    .btn:hover{
+      border-color: rgba(37,99,235,.45);
+      box-shadow: 0 10px 22px rgba(37,99,235,.10);
+      transform: translateY(-1px);
+    }
+    .btn small{ color: var(--muted); }
+
+    .stage{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+    }
+
+    /* "Page" + overlay */
+    .page-wrap{
+      width: 840px;
+      height: 1080px;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid rgba(17,24,39,0.10);
+      box-shadow: 0 18px 60px rgba(0,0,0,.10);
+      position: relative; /* la page, pas l'overlay */
+      overflow: hidden;
+    }
+
+    .page{
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(transparent 23px, rgba(17,24,39,0.04) 24px),
+        linear-gradient(90deg, transparent 23px, rgba(17,24,39,0.04) 24px);
+      background-size: 24px 24px;
+      opacity: .35;
+      pointer-events:none;
+    }
+
+    /* Overlay: dans ton app c'est déjà géré.
+       Ici sandbox => absolute/inset pour recevoir les shapes. */
+    .page-overlay{
+      position:absolute;
+      inset:0;
+      pointer-events: auto;
+    }
+
+    .right{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .right h2{
+      margin: 0;
+      font-size: 14px;
+    }
+    textarea{
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      resize: none;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    textarea:focus{
+      border-color: rgba(37,99,235,0.65);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.10);
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .kbd{
+      display:inline-block;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(17,24,39,0.14);
+      background: rgba(17,24,39,0.03);
+      font-size: 11px;
+      color: #111827;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel sidebar" id="sidebar">
+      <h2>Ajouter forme</h2>
+
+      <button class="btn" data-shape="rect">
+        <span>Rectangle</span><small>radius</small>
+      </button>
+
+		<button class="btn" data-shape="circle">
+	  <span>Rond</span><small>w = h</small>
+	</button>
+
+	<button class="btn" data-shape="ellipse">
+	  <span>Ovale</span><small>ellipse</small>
+	</button>
+
+      <button class="btn" data-shape="line">
+        <span>Trait (ligne)</span><small>stroke</small>
+      </button>
+
+      <button class="btn" data-shape="triangle">
+        <span>Triangle</span><small>fill/stroke</small>
+      </button>
+
+      <button class="btn" data-shape="arrow">
+        <span>Flèche</span><small>stroke</small>
+      </button>
+
+      <div class="hint" style="margin-top:10px;">
+        • Survol : bordure pointillée<br/>
+        • Sélection : poignées + rotation<br/>
+        • Resize + <span class="kbd">Shift</span> : proportions<br/>
+        • Supprimer : <span class="kbd">Suppr</span> / <span class="kbd">Backspace</span><br/>
+        • Clic hors forme : désélection
+      </div>
+    </div>
+
+    <div class="panel stage">
+      <div class="page-wrap">
+        <div class="page"></div>
+        <div class="page-overlay" id="overlay"></div>
+      </div>
+    </div>
+
+    <div class="panel right">
+      <h2>Debug draft (in-memory)</h2>
+      <textarea id="debug" spellcheck="false"></textarea>
+      <div class="hint">
+        Ce JSON simule <code>draft.pages[pageIndex].objects[]</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- module shapes -->
+<script src="/static/labo/editor/shape_block_tools.js?v=1"></script>
+
+  <script>
+    // Draft mock (in-memory)
+    const draft = {
+      pages: [
+        { objects: [] }
+      ]
+    };
+
+    const overlayEl = document.getElementById("overlay");
+    const debugEl = document.getElementById("debug");
+    const sidebarEl = document.getElementById("sidebar");
+
+    function refreshDebug() {
+      debugEl.value = JSON.stringify(draft, null, 2);
+    }
+
+    const ctrl = window.createShapeBlockController({
+      overlayEl,
+      draft,
+      pageIndex: 0,
+      onChange: () => refreshDebug()
+    });
+
+    ctrl.attach();
+    ctrl.setupSandbox({ sidebarEl, debugTextarea: debugEl });
+
+    // init
+    refreshDebug();
+  </script>
+</body>
+</html>

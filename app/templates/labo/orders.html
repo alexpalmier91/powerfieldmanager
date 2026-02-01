@@ -1,0 +1,200 @@
+{# app/templates/labo/orders.html #}
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<div class="app-page">
+
+  <div class="app-page-header">
+    <h1>{{ _("labo.orders.title") or "Commandes" }}</h1>
+
+    <div class="app-page-actions">
+      <input type="text"
+             id="search-input"
+             placeholder="{{ _('labo.orders.search_placeholder') or 'Rechercher une commande…' }}" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+
+      <!-- Filtres -->
+      <div class="orders-filters">
+
+        <!-- Filtre statut -->
+        <label>
+          {{ _("labo.orders.filters.status_label") or "Statut" }}
+          <select id="status-filter">
+            <option value="">{{ _("labo.orders.filters.status_all") or "Tous" }}</option>
+            <option value="draft">{{ _("labo.orders.filters.status_draft") or "Brouillon" }}</option>
+            <option value="pending">En attente</option>
+            <option value="paid">Payée</option>
+            <option value="shipped">{{ _("labo.orders.filters.status_shipped") or "Expédiée" }}</option>
+            <option value="canceled">Annulée</option>
+            <option value="completed">Terminée</option>
+          </select>
+        </label>
+
+        <!-- Filtre dates -->
+        <label>
+          {{ _("labo.orders.filters.date_from") or "Du" }}
+          <input type="date" id="date-from" />
+        </label>
+
+        <label>
+          {{ _("labo.orders.filters.date_to") or "Au" }}
+          <input type="date" id="date-to" />
+        </label>
+
+        <!-- Filtre agent -->
+        <label>
+          {{ _("labo.orders.filters.agent") or "Agent" }}
+          <select id="agent-filter">
+            <option value="">{{ _("labo.orders.filters.status_all") or "Tous" }}</option>
+          </select>
+        </label>
+
+        <button id="btn-filter" type="button" class="btn btn-light">
+          {{ _("labo.orders.filters.apply") or "Appliquer" }}
+        </button>
+      </div>
+
+      <!-- Actions sur la sélection -->
+      <div class="orders-bulk-actions" style="margin: 8px 0 12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <span class="text-muted" id="bulk-label">
+          Sélection multiple :
+        </span>
+
+        <button id="btn-bulk-validate" type="button" class="btn btn-primary btn-sm">
+          Valider la sélection
+        </button>
+
+        <button id="btn-bulk-pdf" type="button" class="btn btn-light btn-sm">
+          PDF de la sélection
+        </button>
+
+        <button id="btn-bulk-export-csv" type="button" class="btn btn-secondary btn-sm">
+          {{ _("labo.orders.bulk_export_csv") or "Exporter sélection en CSV" }}
+        </button>
+
+        <span id="bulk-selection-count" class="text-muted" style="margin-left:auto;">
+          Aucune commande sélectionnée
+        </span>
+      </div>
+
+      <!-- Tableau commandes -->
+      <table class="table z-orders-table" id="orders-table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" id="select-all-orders">
+            </th>
+            <th data-sort="order_number">{{ _("labo.orders.table.order_number") or "N° doc" }}</th>
+            <th data-sort="date">{{ _("labo.orders.table.date") or "Date commande" }}</th>
+            <th data-sort="delivery_date">{{ _("labo.orders.table.delivery_date") or "Date livraison" }}</th>
+            <th data-sort="client_name">{{ _("labo.orders.table.client") or "Client" }}</th>
+            <th>{{ _("labo.orders.table.client_code") or "Code client" }}</th>
+            <th>{{ _("labo.orders.table.total_ht") or "Total HT" }}</th>
+            <th>{{ _("labo.orders.table.status") or "Statut" }}</th>
+            <th>{{ _("labo.orders.table.lines_qty") or "Lignes" }}</th>
+            <th data-sort="agent_name">{{ _("labo.orders.table.agent") or "Agent" }}</th>
+            <th>{{ _("labo.orders.table.pdf") or "PDF" }}</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody id="orders-tbody">
+          <tr id="row-empty">
+            <td colspan="12">{{ _("labo.orders.empty") or "Aucune commande." }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pager">
+        <button id="btn-prev" type="button" class="btn btn-light">
+          {{ _("common.previous") or "Précédent" }}
+        </button>
+
+        <span id="pager-info"></span>
+
+        <button id="btn-next" type="button" class="btn btn-light">
+          {{ _("common.next") or "Suivant" }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal détail commande -->
+  <div id="order-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          {{ _("labo.orders.modal_title") or "Détail commande" }}
+          <span id="modal-order-number"></span>
+        </h2>
+        <button id="order-close" type="button" class="btn btn-ghost">&times;</button>
+      </div>
+
+      <div class="modal-body" id="order-detail">
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal code client -->
+  <div id="client-code-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="client-code-modal-title">
+          {{ _("labo.orders.client_code_modal_title") or "Code client pour ce client" }}
+        </h2>
+        <button id="client-code-close" type="button" class="btn btn-ghost">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="client-code-form">
+          <input type="hidden" id="client-id-input" name="client_id" value="">
+          <div class="form-group">
+            <label for="client-code-input">
+              {{ _("labo.orders.client_code_label") or "Code client" }}
+            </label>
+            <input
+              type="text"
+              id="client-code-input"
+              name="code_client"
+              class="form-control"
+              placeholder="{{ _('labo.orders.client_code_placeholder') or 'Saisir le code client…' }}"
+              required
+            >
+          </div>
+          <div id="client-code-error" class="text-danger hidden" style="margin-top:6px;">
+          </div>
+          <div class="modal-actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" id="client-code-cancel" class="btn btn-light">
+              {{ _("common.cancel") or "Annuler" }}
+            </button>
+            <button type="submit" class="btn btn-primary">
+              {{ _("common.save") or "Enregistrer" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Petites traductions JS avec fallback FR
+  window.Z_I18N = {
+    clientCodeAdd: {{ _("labo.orders.client_code_missing") or "Ajouter code client" | tojson }},
+    clientCodeError: {{ _("labo.orders.client_code_error") or "Erreur lors de l'enregistrement du code client." | tojson }},
+    clientCodeSuccess: {{ _("labo.orders.client_code_success") or "Code client enregistré avec succès." | tojson }},
+    clientCodeModalTitle: {{ _("labo.orders.client_code_modal_title") or "Code client pour ce client" | tojson }},
+    clientCodeLabel: {{ _("labo.orders.client_code_label") or "Code client" | tojson }},
+    clientCodePlaceholder: {{ _("labo.orders.client_code_placeholder") or "Saisir le code client…" | tojson }}
+  };
+</script>
+
+<link rel="stylesheet" href="/static/labo/orders.css">
+<script src="/static/labo/orders.js?v=12"script>
+{% endblock %}

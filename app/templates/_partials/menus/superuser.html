@@ -1,0 +1,144 @@
+{# =======================================================
+   MENU SUPERUSER
+   ======================================================= #}
+
+{# -----------------------
+   Liens principaux
+   ----------------------- #}
+{% set base_items = [
+  {"href": "/superuser/dashboard", "label": "Dashboard",          "icon": "🛠️"},
+  {"href": "/superuser/clients",   "label": "Clients",            "icon": "👥"},
+  {"href": "/superuser/labos",      "label": "Labos",              "icon": "🏭"},
+  {"href": "/superuser/labos/new",  "label": "Nouveau labo",       "icon": "➕"},
+  {"href": "/superuser/orders",    "label": "Commandes globales", "icon": "📄"}
+] %}
+
+{# -----------------------
+   Liens IMPORTATION
+   ----------------------- #}
+{% set import_items = [
+  {"href": "/superuser/import/clients",            "label": "Importation clients",           "icon": "⬆️"},
+  {"href": "/superuser/import/client-mapping",     "label": "Mapping clients / labos",       "icon": "🔗"},
+  {"href": "/superuser/import/agent-client",       "label": "Matching clients / agents",     "icon": "🧩"},
+  {"href": "/superuser/import/agent-orders",       "label": "Import commandes agents",       "icon": "📦"},
+  {"href": "/superuser/agent-orders/auto-import",  "label": "Import auto commandes agents",  "icon": "⚙️"},
+  {"href": "/superuser/labos/sales-import-sync",   "label": "Import auto documents labos",   "icon": "📑"},
+  {"href": "/superuser/labos/stock-sync",          "label": "Synchronisation stock labos",   "icon": "📊"},
+  {"href": "/superuser/import/product-prestashop", "label": "Import produits PrestaShop",    "icon": "🛒"},
+  {"href": "/superuser/imports",                   "label": "Imports & Jobs",                "icon": "🚚"}
+] %}
+
+{# -----------------------
+   Liens PRÉSENTOIRS
+   ----------------------- #}
+{% set presentoir_items = [
+  {"href": "/superuser/presentoirs",        "label": "Présentoirs RFID",    "icon": "📡"},
+  {"href": "/superuser/display-products",   "label": "Display Products",    "icon": "🧾"},
+  {"href": "/superuser/rfid/by-presentoir", "label": "Tags par présentoir", "icon": "📦"},
+  {"href": "/superuser/rfid/by-client",     "label": "Tags par client",     "icon": "🏪"},
+  {"href": "/superuser/rfid-tags",          "label": "Tous les tags",       "icon": "🏷️"},
+  {"href": "/superuser/presentoir-clients", "label": "Clients présentoirs", "icon": "🏪"}
+] %}
+
+{% set path = request.url.path %}
+
+{# -----------------------
+   Détection menus actifs
+   ----------------------- #}
+{% set ns = namespace(import_active=false, presentoir_active=false) %}
+
+{% for it in import_items %}
+  {% if path.startswith(it.href) %}
+    {% set ns.import_active = true %}
+  {% endif %}
+{% endfor %}
+
+{% for it in presentoir_items %}
+  {% if path.startswith(it.href) %}
+    {% set ns.presentoir_active = true %}
+  {% endif %}
+{% endfor %}
+
+<nav class="menu" role="navigation">
+
+  {% for it in base_items %}
+    {% set active = path.startswith(it.href) %}
+    <a class="item {{ 'active' if active }}" href="{{ it.href }}">
+      <span class="icon">{{ it.icon }}</span>
+      <span class="label">{{ it.label }}</span>
+    </a>
+  {% endfor %}
+
+  <div class="item import-toggle {{ 'active' if ns.import_active }}"
+       data-import-toggle
+       style="display:flex; justify-content:space-between; cursor:pointer;">
+    <div style="display:flex; gap:8px;">
+      <span class="icon">⬆️</span>
+      <span class="label">Importation</span>
+    </div>
+    <span class="chevron" data-import-chevron>
+      {{ '▾' if ns.import_active else '▸' }}
+    </span>
+  </div>
+
+  <div class="import-submenu"
+       data-import-submenu
+       style="margin-left:20px; {{ '' if ns.import_active else 'display:none;' }}">
+    {% for it in import_items %}
+      {% set active = path.startswith(it.href) %}
+      <a class="item {{ 'active' if active }}" href="{{ it.href }}">
+        <span class="icon">{{ it.icon }}</span>
+        <span class="label">{{ it.label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="item presentoir-toggle {{ 'active' if ns.presentoir_active }}"
+       data-presentoir-toggle
+       style="display:flex; justify-content:space-between; cursor:pointer;">
+    <div style="display:flex; gap:8px;">
+      <span class="icon">📡</span>
+      <span class="label">Présentoir connecté</span>
+    </div>
+    <span class="chevron" data-presentoir-chevron>
+      {{ '▾' if ns.presentoir_active else '▸' }}
+    </span>
+  </div>
+
+  <div class="presentoir-submenu"
+       data-presentoir-submenu
+       style="margin-left:20px; {{ '' if ns.presentoir_active else 'display:none;' }}">
+    {% for it in presentoir_items %}
+      {% set active = path.startswith(it.href) %}
+      <a class="item {{ 'active' if active }}" href="{{ it.href }}">
+        <span class="icon">{{ it.icon }}</span>
+        <span class="label">{{ it.label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <button type="button" id="logoutBtn">Déconnexion</button>
+
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  function setupToggle(toggleSel, submenuSel, chevronSel) {
+    const toggle = document.querySelector(toggleSel);
+    const submenu = document.querySelector(submenuSel);
+    const chevron = document.querySelector(chevronSel);
+
+    if (!toggle || !submenu) return;
+
+    toggle.addEventListener("click", function () {
+      const isOpen = submenu.style.display === "block";
+      submenu.style.display = isOpen ? "none" : "block";
+      if (chevron) chevron.textContent = isOpen ? "▸" : "▾";
+    });
+  }
+
+  setupToggle("[data-import-toggle]", "[data-import-submenu]", "[data-import-chevron]");
+  setupToggle("[data-presentoir-toggle]", "[data-presentoir-submenu]", "[data-presentoir-chevron]");
+});
+</script>

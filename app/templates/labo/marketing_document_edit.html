@@ -1,0 +1,49 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}Édition document{% endblock %}
+{% block breadcrumb %}Marketing / Édition{% endblock %}
+
+{% block content %}
+  <h1 style="margin-bottom:12px;">Éditer le document</h1>
+
+  <div class="card" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="/labo/marketing-documents">← Retour</a>
+
+    <button id="mdEditZoomOut" class="btn btn-secondary" type="button">-</button>
+    <button id="mdEditZoomIn" class="btn btn-secondary" type="button">+</button>
+    <button id="mdEditFitWidth" class="btn btn-secondary" type="button">Ajuster largeur</button>
+
+    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+      <span id="mdEditStatus" style="color:#6b7280; font-size:13px;"></span>
+      <a id="mdEditOpenNewTab" class="btn btn-primary" target="_blank" rel="noopener">Ouvrir</a>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <!-- Viewer -->
+    <div id="mdEditViewport"
+         style="position:relative; height:78vh; border:1px solid #e5e7eb; border-radius:12px; overflow:auto; background:#f9fafb;">
+      <div id="mdEditStage"
+           style="position:relative; width:100%; min-height:100%; display:flex; justify-content:center;">
+        <!-- PDF.js render canvas -->
+        <canvas id="mdPdfCanvas" style="margin:18px 0; background:#fff; border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.08);"></canvas>
+
+        <!-- Calque annotations (étape 2.2) -->
+        <div id="mdOverlay"
+             style="position:absolute; top:0; left:50%; transform:translateX(-50%); pointer-events:none;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__MD_EDIT__ = {
+      docId: {{ doc_id }},
+      apiBase: "/api-zenhub"
+    };
+  </script>
+
+  <!-- PDF.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js"></script>
+  <script src="/static/labo/marketing_document_edit.js"></script>
+{% endblock %}

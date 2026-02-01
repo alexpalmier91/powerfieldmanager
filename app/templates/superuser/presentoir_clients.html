@@ -1,0 +1,199 @@
+{# app/templates/superuser/presentoir_clients.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Clients présentoirs{% endblock %}
+{% block breadcrumb %}Clients présentoirs{% endblock %}
+
+{% block content %}
+  <h1>Clients des présentoirs RFID</h1>
+
+  <p style="color:#6b7280;font-size:0.9rem;margin-bottom:16px;">
+    Ici tu gères :
+    <br>• les <strong>clients propriétaires</strong> du parc de présentoirs (buy / rent),
+    <br>• les <strong>clients finaux</strong> où les présentoirs sont installés,
+    avec un lien entre les deux.
+  </p>
+
+  <div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;">
+
+    {# ================== COLONNE GAUCHE : OWNERS ================== #}
+    <div style="flex:1 1 380px; min-width:320px;">
+      <div class="card">
+        <h2>Clients propriétaires</h2>
+        <p style="color:#6b7280;font-size:0.85rem;">
+          Exemples : labo, centrale, grossiste, groupement…
+        </p>
+
+        <form id="formOwner" style="margin-bottom:12px;">
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <label for="owner_name" style="font-weight:600;">Nom*</label>
+              <input id="owner_name" name="name" type="text" required
+                     style="width:100%;padding:4px 8px;">
+            </div>
+            <div>
+              <label for="owner_contact_name" style="font-weight:600;">Contact</label>
+              <input id="owner_contact_name" name="contact_name" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1;">
+                <label for="owner_email" style="font-weight:600;">Email</label>
+                <input id="owner_email" name="email" type="email"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+              <div style="flex:1;">
+                <label for="owner_phone" style="font-weight:600;">Téléphone</label>
+                <input id="owner_phone" name="phone" type="text"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+            </div>
+            <div>
+              <label for="owner_company_number" style="font-weight:600;">N° société / ref interne</label>
+              <input id="owner_company_number" name="company_number" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+            Ajouter un client propriétaire
+          </button>
+          <span id="ownerFormStatus" style="margin-left:8px;font-size:0.85rem;color:#6b7280;"></span>
+        </form>
+
+        <h3 style="margin-top:16px;">Liste des propriétaires</h3>
+        <table class="table" id="ownersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Contact</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody id="ownersTableBody">
+            <tr><td colspan="4">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ================== COLONNE DROITE : END CLIENTS ================== #}
+    <div style="flex:1 1 380px; min-width:320px;">
+      <div class="card">
+        <h2>Clients finaux</h2>
+        <p style="color:#6b7280;font-size:0.85rem;">
+          Lieu d’installation des présentoirs (pharmacie, parapharmacie, magasin…)
+          avec rattachement à un client propriétaire.
+        </p>
+
+        <form id="formEndClient" style="margin-bottom:12px;">
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <label for="end_name" style="font-weight:600;">Nom du point de vente*</label>
+              <input id="end_name" name="name" type="text" required
+                     style="width:100%;padding:4px 8px;">
+            </div>
+
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1;">
+                <label for="end_type" style="font-weight:600;">Type</label>
+                <input id="end_type" name="type" type="text"
+                       placeholder="pharmacie, magasin…"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+              <div style="flex:1;">
+                <label for="end_owner_id" style="font-weight:600;">Client propriétaire</label>
+                <select id="end_owner_id" name="owner_client_id"
+                        style="width:100%;padding:4px 8px;">
+                  <option value="">— Sélectionner un propriétaire —</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="end_contact_name" style="font-weight:600;">Contact</label>
+              <input id="end_contact_name" name="contact_name" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1;">
+                <label for="end_email" style="font-weight:600;">Email</label>
+                <input id="end_email" name="email" type="email"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+              <div style="flex:1;">
+                <label for="end_phone" style="font-weight:600;">Téléphone</label>
+                <input id="end_phone" name="phone" type="text"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+            </div>
+
+            <div>
+              <label for="end_address1" style="font-weight:600;">Adresse</label>
+              <input id="end_address1" name="address1" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+
+            <div>
+              <label for="end_address2" style="font-weight:600;">Complément</label>
+              <input id="end_address2" name="address2" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+
+            <div style="display:flex; gap:8px;">
+              <div style="flex:0 0 90px;">
+                <label for="end_postcode" style="font-weight:600;">CP</label>
+                <input id="end_postcode" name="postcode" type="text"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+              <div style="flex:1;">
+                <label for="end_city" style="font-weight:600;">Ville</label>
+                <input id="end_city" name="city" type="text"
+                       style="width:100%;padding:4px 8px;">
+              </div>
+            </div>
+
+            <div>
+              <label for="end_country" style="font-weight:600;">Pays</label>
+              <input id="end_country" name="country" type="text"
+                     value="France"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+
+            <div>
+              <label for="end_external_ref" style="font-weight:600;">Réf externe (Sage, Presta…)</label>
+              <input id="end_external_ref" name="external_ref" type="text"
+                     style="width:100%;padding:4px 8px;">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+            Ajouter un client final
+          </button>
+          <span id="endFormStatus" style="margin-left:8px;font-size:0.85rem;color:#6b7280;"></span>
+        </form>
+
+        <h3 style="margin-top:16px;">Liste des clients finaux</h3>
+        <table class="table" id="endClientsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Type</th>
+              <th>Ville</th>
+              <th>Propriétaire</th>
+            </tr>
+          </thead>
+          <tbody id="endClientsTableBody">
+            <tr><td colspan="5">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/superuser/presentoir_clients.js"></script>
+{% endblock %}

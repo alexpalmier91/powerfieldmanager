@@ -1,0 +1,29 @@
+{# app/templates/_partials/menus/labo.html #}
+
+{# Menu LABO - ajout : Documents commerciaux (/labo/marketing-documents) #}
+{% set items = [
+  {"href": "/labo/dashboard",            "label": "Dashboard",              "label_key": "labo.menu.dashboard",           "icon": "🏠"},
+  {"href": "/labo/products",             "label": "Produits",               "label_key": "labo.menu.products",            "icon": "📦"},
+  {"href": "/labo/orders",               "label": "Commandes reçues",       "label_key": "labo.menu.orders",              "icon": "🧾"},
+  {"href": "/labo/clients",              "label": "Clients",               "label_key": "labo.menu.clients",             "icon": "👥"},
+  {"href": "/labo/agents",               "label": "Agents liés",           "label_key": "labo.menu.agents",              "icon": "🧑‍💼"},
+  {"href": "/labo/marketing-documents",  "label": "Documents commerciaux", "label_key": "labo.menu.marketing_documents", "icon": "📄"},
+  {"href": "/labo/import/sales",         "label": "Import ventes",         "label_key": "labo.menu.import_sales",        "icon": "📥"}
+] %}
+{% set path = request.url.path %}
+
+<nav class="menu" role="navigation">
+  {% for it in items %}
+    {% set active = path.startswith(it.href) %}
+    <a class="item {{ 'active' if active }}" href="{{ it.href }}" aria-current="{{ 'page' if active }}">
+      <span class="icon">{{ it.icon }}</span>
+      <span class="label" data-i18n="{{ it.label_key }}">
+        {{ it.label }}
+      </span>
+    </a>
+  {% endfor %}
+
+  <button type="button" id="logoutBtn">
+    Déconnexion
+  </button>
+</nav>

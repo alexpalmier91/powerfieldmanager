@@ -1,0 +1,263 @@
+{# app/templates/agent/dashboard.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}{{ _("agent.dashboard.title") }}{% endblock %}
+{% block breadcrumb %}{{ _("agent.dashboard.breadcrumb") }}{% endblock %}
+
+{% block topbar_right %}
+  <select id="quickLabo"
+          aria-label="{{ _('agent.dashboard.quick_labo') }}"></select>
+{% endblock %}
+
+{% block content %}
+  <!-- Carte de bienvenue -->
+  <div class="card" style="margin-bottom:16px;">
+    <h2 style="margin:0 0 8px;">
+      {{ _("agent.dashboard.welcome_title") }}
+    </h2>
+    <p style="margin:0; color:#6b7280">
+      {{ _("agent.dashboard.welcome_desc") }}
+    </p>
+  </div>
+
+  <!-- Layout 2 colonnes : gauche = KPI / droite = Graph + CA par labo -->
+  <div class="card" style="margin-top:8px;">
+    <div style="
+      display:flex;
+      flex-wrap:wrap;
+      gap:16px;
+    ">
+      {# ===================== COLONNE GAUCHE ===================== #}
+      <div style="flex:1 1 260px; max-width:420px; display:flex; flex-direction:column; gap:12px;">
+
+        <h3 style="margin:0 0 8px;">
+          {{ _("agent.dashboard.kpis_title") if _("agent.dashboard.kpis_title") != "agent.dashboard.kpis_title" else "Indicateurs" }}
+        </h3>
+
+        <!-- KPI : CA mois en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              {{ _("agent.dashboard.kpis.ca_month") if _("agent.dashboard.kpis.ca_month") != "agent.dashboard.kpis.ca_month" else "CA mois en cours" }}
+            </div>
+            <div id="kpi-ca-month" style="font-weight:700; font-size:18px; color:#2563eb;">—</div>
+          </div>
+          <div style="font-size:24px;">📆</div>
+        </div>
+
+        <!-- KPI : CA année en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              {{ _("agent.dashboard.kpis.ca_year") if _("agent.dashboard.kpis.ca_year") != "agent.dashboard.kpis.ca_year" else "CA année en cours" }}
+            </div>
+            <div id="kpi-ca-year" style="font-weight:700; font-size:18px; color:#16a34a;">—</div>
+          </div>
+          <div style="font-size:24px;">📈</div>
+        </div>
+		
+		        <!-- KPI : Commission mois en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              Commission mois en cours
+            </div>
+            <div id="kpi-commission-month" style="font-weight:700; font-size:18px; color:#7c3aed;">—</div>
+          </div>
+          <div style="font-size:24px;">💶</div>
+        </div>
+
+        <!-- KPI : Commission année en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              Commission année en cours
+            </div>
+            <div id="kpi-commission-year" style="font-weight:700; font-size:18px; color:#7c3aed;">—</div>
+          </div>
+          <div style="font-size:24px;">🏅</div>
+        </div>
+
+
+        <!-- KPI : Clients actifs (12 mois) -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              {{ _("agent.dashboard.kpis.clients_12m") if _("agent.dashboard.kpis.clients_12m") != "agent.dashboard.kpis.clients_12m" else "Clients actifs (12 mois)" }}
+            </div>
+            <div id="kpi-clients-active" style="font-weight:700; font-size:18px;">—</div>
+          </div>
+          <div style="font-size:24px;">👥</div>
+        </div>
+
+        <!-- KPI : Labos partenaires -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              {{ _("agent.dashboard.kpis.labos") if _("agent.dashboard.kpis.labos") != "agent.dashboard.kpis.labos" else "Labos partenaires" }}
+            </div>
+            <div id="kpi-labos" style="font-weight:700; font-size:18px;">—</div>
+          </div>
+          <div style="font-size:24px;">🏭</div>
+        </div>
+
+        <!-- Tableau CA par labo (12 derniers mois) -->
+        <div style="margin-top:4px;">
+          <h4 style="margin:0 0 6px; font-size:14px; color:#6b7280; text-transform:uppercase;">
+            {{ _("agent.dashboard.kpis.ca_by_labo_title") if _("agent.dashboard.kpis.ca_by_labo_title") != "agent.dashboard.kpis.ca_by_labo_title" else "CA par labo (12 mois)" }}
+          </h4>
+          <div style="border-radius:8px; border:1px solid #e5e7eb; overflow:hidden;">
+            <div style="max-height:220px; overflow-y:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
+                  <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ _("agent.dashboard.kpis.ca_by_labo_col_labo") if _("agent.dashboard.kpis.ca_by_labo_col_labo") != "agent.dashboard.kpis.ca_by_labo_col_labo" else "Labo" }}
+                    </th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                      {{ _("agent.dashboard.kpis.ca_by_labo_col_ca") if _("agent.dashboard.kpis.ca_by_labo_col_ca") != "agent.dashboard.kpis.ca_by_labo_col_ca" else "CA HT" }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="table-ca-labo-body">
+                  <tr>
+                    <td colspan="2" style="padding:8px; text-align:center; color:#9ca3af;">
+                      {{ _("agent.dashboard.loading") if _("agent.dashboard.loading") != "agent.dashboard.loading" else "Chargement..." }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {# ===================== COLONNE DROITE ===================== #}
+      <div style="flex:3 1 360px; min-width:320px;">
+
+        <div style="
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+          padding:10px 12px;
+          height:100%;
+          display:flex;
+          flex-direction:column;
+        ">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+                {{ _("agent.dashboard.chart.ca_daily_title") if _("agent.dashboard.chart.ca_daily_title") != "agent.dashboard.chart.ca_daily_title" else "CA HT par jour – mois en cours" }}
+              </div>
+              <div style="font-size:12px; color:#9ca3af;">
+                {{ _("agent.dashboard.chart.ca_daily_subtitle") if _("agent.dashboard.chart.ca_daily_subtitle") != "agent.dashboard.chart.ca_daily_subtitle" else "Histogramme des ventes journalières" }}
+              </div>
+            </div>
+            <div id="chart-period-label" style="font-size:12px; color:#9ca3af;">
+              {{ _("agent.dashboard.chart.current_month") if _("agent.dashboard.chart.current_month") != "agent.dashboard.chart.current_month" else "Mois en cours" }}
+            </div>
+          </div>
+
+          <div style="position:relative; flex:1 1 auto; min-height:260px; max-height:420px;">
+            <canvas id="chart-ca-daily"></canvas>
+            <div id="chart-loader"
+                 style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:13px; color:#9ca3af;">
+              {{ _("agent.dashboard.loading_chart") if _("agent.dashboard.loading_chart") != "agent.dashboard.loading_chart" else "Chargement du graphique..." }}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {# Chart.js depuis CDN #}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  {# JS Dashboard Agent (statistiques + graphique) #}
+ <script src="/static/agent/agent_dashboard.js"></script>
+
+  <script type="module">
+    const ALL_LABOS_LABEL = {{ _("agent.dashboard.all_labos")|tojson }};
+
+    async function bootQuickLabo(){
+      try{
+        // on garde la logique actuelle : token dans localStorage "token"
+        const token = localStorage.getItem("token") || "";
+        if(!token) return;
+
+        const res = await fetch("/api-zenhub/agent/me", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        if(!res.ok) return;
+
+        const me = await res.json();
+        const sel = document.getElementById("quickLabo");
+        if(!sel) return;
+
+        sel.innerHTML =
+          '<option value="">' + ALL_LABOS_LABEL + '</option>' +
+          (me.labos || [])
+            .map(l => `<option value="${l.id}">${l.name}</option>`)
+            .join('');
+
+        sel.addEventListener("change", () => {
+          window.dispatchEvent(
+            new CustomEvent("quick-labo-change", { detail: { labo_id: sel.value } })
+          );
+        });
+      }catch(e){
+        // log si besoin
+        console.error("Erreur chargement quickLabo", e);
+      }
+    }
+
+    document.readyState !== "loading"
+      ? bootQuickLabo()
+      : document.addEventListener("DOMContentLoaded", bootQuickLabo);
+  </script>
+{% endblock %}

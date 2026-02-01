@@ -1,0 +1,91 @@
+{# app/templates/superuser/display_products_list.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Display Products{% endblock %}
+{% block breadcrumb %}Superuser / Display Products{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 style="margin:0;">Display Products</h1>
+	   <a href="/superuser/display-products/import-excel" class="btn btn-secondary">
+        Importer Excel
+      </a>
+      <a href="/superuser/display-products/new" class="btn btn-primary">
+        Nouveau produit
+      </a>
+    </div>
+
+    <div style="margin-top:16px;">
+      <form method="get" action="" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text"
+               name="q"
+               placeholder="Recherche SKU / Nom..."
+               value="{{ request.query_params.get('q', '') }}"
+               class="input"
+               style="min-width:220px;">
+
+        <select name="owner_client_id" class="input">
+          <option value="">Tous les owners</option>
+          {% for owner in owners %}
+            <option value="{{ owner.id }}"
+              {% if request.query_params.get('owner_client_id') == owner.id|string %}selected{% endif %}>
+              {{ owner.name }} (id {{ owner.id }})
+            </option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-secondary">
+          Filtrer
+        </button>
+      </form>
+    </div>
+
+    <table class="table" style="margin-top:16px; width:100%;">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Nom</th>
+          <th>Owner</th>
+          <th>Créé le</th>
+          <th>EPC liés</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td>{{ p.sku }}</td>
+            <td>{{ p.name }}</td>
+            <td>
+              {% if p.owner_client %}
+                {{ p.owner_client.name }} (id {{ p.owner_client.id }})
+              {% else %}
+                Owner #{{ p.owner_client_id }}
+              {% endif %}
+            </td>
+            <td>
+              {% if p.created_at %}
+                {{ p.created_at.astimezone().strftime("%d/%m/%Y %H:%M") }}
+              {% endif %}
+            </td>
+            <td>
+              {{ p.rfid_links|length if p.rfid_links is defined else "-" }}
+            </td>
+            <td style="text-align:right;">
+              <a href="/superuser/display-products/{{ p.id }}" class="btn btn-small">
+                Détails / Lier EPC
+              </a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align:center; color:#6b7280;">
+              Aucun Display Product pour le moment.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{# app/templates/superuser/presentoirs_list.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Présentoirs RFID{% endblock %}
+{% block breadcrumb %}Présentoirs RFID{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+      <div>
+        <h2 style="margin:0;">Gestion des présentoirs RFID</h2>
+        <p style="margin:4px 0 0; color:#6b7280;">
+          Liste des présentoirs intelligents connectés à Power Field Manager.
+        </p>
+      </div>
+
+      <button id="btn-open-presentoir-modal"
+              class="btn primary"
+              type="button"
+              style="padding:8px 14px; border-radius:6px;">
+        ➕ Ajouter un présentoir
+      </button>
+    </div>
+
+    <div style="margin-top:16px;" class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Pharmacie</th>
+            <th>Emplacement</th>
+            <th>Statut</th>
+            <th>Dernier contact</th>
+            <th>Produits (dernier)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% if presentoirs %}
+          {% for p in presentoirs %}
+            <tr>
+              <td>{{ p.code }}</td>
+              <td>{{ p.name or "-" }}</td>
+              <td>
+                {# pour l'instant on affiche juste l'ID ; on pourra joindre client + nom plus tard #}
+                {{ p.pharmacy_id or "-" }}
+              </td>
+              <td>{{ p.location or "-" }}</td>
+              <td>
+                {% set status = p.computed_status or "INCONNU" %}
+                {% if status == "ONLINE" %}
+                  <span style="display:inline-block; padding:2px 10px; border-radius:999px; background:#dcfce7; color:#166534; font-size:12px;">
+                    ● Online
+                  </span>
+                {% elif status == "OFFLINE" %}
+                  <span style="display:inline-block; padding:2px 10px; border-radius:999px; background:#fee2e2; color:#b91c1c; font-size:12px;">
+                    ● Offline
+                  </span>
+                {% elif status == "ERROR" %}
+                  <span style="display:inline-block; padding:2px 10px; border-radius:999px; background:#fef3c7; color:#92400e; font-size:12px;">
+                    ● Erreur
+                  </span>
+                {% else %}
+                  <span style="display:inline-block; padding:2px 10px; border-radius:999px; background:#e5e7eb; color:#374151; font-size:12px;">
+                    ● Inconnu
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if p.last_seen_at %}
+                  {{ p.last_seen_at.strftime("%d/%m/%Y %H:%M") }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {{ p.current_num_products if p.current_num_products is not none else "-" }}
+              </td>
+              <td>
+                <a href="/superuser/presentoirs/{{ p.id }}" class="btn small">
+                  Détail
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align:center; padding:16px; color:#9ca3af;">
+              Aucun présentoir pour le moment.
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# ==== Modale création présentoir ==== #}
+  <div id="presentoir-modal-overlay" class="presentoir-modal-overlay hidden"></div>
+
+  <div id="presentoir-modal" class="presentoir-modal hidden">
+    <div class="presentoir-modal-card">
+      <h3 style="margin-top:0; margin-bottom:8px;">Ajouter un présentoir</h3>
+      <p style="margin:0 0 16px; color:#6b7280; font-size:14px;">
+        Renseigne les informations de base du présentoir (code unique, nom, emplacement…).
+      </p>
+
+      <form id="presentoir-form">
+        <div class="form-row">
+          <label for="presentoir-code">Code *</label>
+          <input id="presentoir-code" name="code" type="text" required
+                 placeholder="Ex : PFM-001">
+        </div>
+
+        <div class="form-row">
+          <label for="presentoir-name">Nom</label>
+          <input id="presentoir-name" name="name" type="text"
+                 placeholder="Ex : Présentoir vitrine Pharmacie Dupont">
+        </div>
+
+        <div class="form-row">
+          <label for="presentoir-pharmacy-id">ID pharmacie (optionnel)</label>
+          <input id="presentoir-pharmacy-id" name="pharmacy_id" type="number"
+                 placeholder="ID client (table client)">
+        </div>
+
+        <div class="form-row">
+          <label for="presentoir-location">Emplacement</label>
+          <input id="presentoir-location" name="location" type="text"
+                 placeholder="Comptoir, vitrine, rayon hygiène…">
+        </div>
+
+        <div class="form-row">
+          <label for="presentoir-tunnel-url">URL tunnel Cloudflare</label>
+          <input id="presentoir-tunnel-url" name="tunnel_url" type="url"
+                 placeholder="https://pfm001.powerfieldmanager.com">
+        </div>
+
+        <div id="presentoir-form-error"
+             style="margin-top:8px; margin-bottom:8px; color:#b91c1c; font-size:14px; display:none;"></div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+          <button id="presentoir-btn-cancel" type="button" class="btn">
+            Annuler
+          </button>
+          <button type="submit" class="btn primary">
+            Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .presentoir-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 40;
+    }
+    .presentoir-modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .presentoir-modal.hidden,
+    .presentoir-modal-overlay.hidden {
+      display: none;
+    }
+    .presentoir-modal-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+    }
+    .presentoir-modal-card .form-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+      gap: 4px;
+    }
+    .presentoir-modal-card label {
+      font-size: 14px;
+      color: #374151;
+    }
+    .presentoir-modal-card input {
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 14px;
+      width: 100%;
+    }
+  </style>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+    <script src="/static/superuser/superuser_presentoirs.js"></script>
+{% endblock %}

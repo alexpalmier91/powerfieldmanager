@@ -1,0 +1,82 @@
+{% extends "_layouts/app.html" %}
+
+{% block title %}Dashboard Superuser{% endblock %}
+{% block breadcrumb %}Superuser / Tableau de bord{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>🛠️ Dashboard Superuser</h2>
+    <p style="color:#6b7280">Bienvenue sur la console d’administration ZenHub.</p>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>👥 Agents commerciaux</h3>
+    <p style="color:#6b7280">Liste des agents avec option d’impersonation.</p>
+    <div id="agentsList" style="margin-top:10px"></div>
+    <div id="agentsErr" class="err"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>🏭 Labos</h3>
+    <p style="color:#6b7280">Impersonation : se connecter temporairement en tant que Labo pour diagnostiquer ou agir.</p>
+
+    {% if labos is defined and labos %}
+      <div class="table-responsive" style="margin-top:10px">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:90px">ID</th>
+              <th>Nom</th>
+              <th style="width:220px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for labo in labos %}
+            <tr>
+              <td>{{ labo.id }}</td>
+              <td>{{ labo.name }}</td>
+              <td>
+                <button
+                  class="btn btn-primary btn-impersonate"
+                  data-id="{{ labo.id }}"
+                  data-name="{{ labo.name|e }}"
+                  title="Se connecter en tant que ce Labo">
+                  Se connecter en tant que ce Labo
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div id="labosList" style="margin-top:10px"></div>
+    {% endif %}
+
+    <div id="labosErr" class="err"></div>
+
+    <div class="mt-3">
+      <button id="btn-stop-impersonation" class="btn btn-secondary" style="display:none;">
+        Quitter le mode Labo
+      </button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <!-- JS existant (à conserver pour ce qui est déjà en place) -->
+  <script type="module" src="/static/superuser/superuser_dashboard.js?v=1"></script>
+
+  <!-- Nouveau JS spécifique “Se connecter en tant que Labo” -->
+  <script type="module" src="/static/superuser/pages/su_labs/index.js?v=1"></script>
+
+  <!-- (optionnel) mini-helper pour afficher le bouton Quitter si backup présent -->
+  <script>
+    (function () {
+      const stopBtn = document.getElementById('btn-stop-impersonation');
+      if (stopBtn && sessionStorage.getItem('jwt_superuser_backup')) {
+        stopBtn.style.display = '';
+      }
+    })();
+  </script>
+{% endblock %}

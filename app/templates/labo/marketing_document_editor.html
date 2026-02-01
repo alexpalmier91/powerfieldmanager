@@ -1,0 +1,1202 @@
+{# app/templates/labo/marketing_document_editor.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Édition du document{% endblock %}
+{% block breadcrumb %}
+<a href="/labo/marketing-documents">Documents commerciaux</a> <span> / Édition</span>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/labo/editor/marketing_document_editor.css?v=1">
+
+{# ✅ Quill (CDN) pour édition HTML des paragraphes #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
+<div class="mdoc-editor">
+  <div class="mdoc-header">
+    <div>
+      <h1 class="mdoc-title">Éditeur de document</h1>
+      <div class="mdoc-subtitle">Ajoute du texte, des images, déplace et redimensionne directement sur le PDF.</div>
+    </div>
+
+    <div class="mdoc-header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button id="btnSaveDraftTop" class="btn btn-primary" type="button">Enregistrer</button>
+      <button id="btnPublishTop" class="btn btn-secondary" type="button">Publier</button>
+      <span id="publishStatusTop" style="color:#6b7280; font-size:13px;"></span>
+    </div>
+  </div>
+
+  <div
+    id="editorRoot"
+    class="mdoc-layout"
+    data-doc-id="{{ doc_id }}"
+    data-role="LABO"
+    data-labo-id="{{ labo_id }}"
+  >
+    <!-- COLONNE GAUCHE -->
+    <aside class="mdoc-sidebar">
+      <div class="mdoc-sidebar-inner">
+
+        <!-- ========================= -->
+        <!-- 🔧 OUTILS (collapsible) -->
+        <!-- ========================= -->
+        <div class="mdoc-panel mdoc-collapsible" id="toolSection" data-collapsed="0">
+          <!-- Header -->
+          <button type="button"
+                  class="mdoc-panel-title mdoc-collapsible-head"
+                  id="toolSectionToggle"
+                  aria-expanded="true">
+            <span class="mdoc-collapsible-title">Outils</span>
+            <span class="mdoc-collapsible-icon">▾</span>
+          </button>
+
+          <!-- Body : UNIQUEMENT les boutons d’outils -->
+          <div class="mdoc-collapsible-body" id="toolSectionBody">
+            <div class="mdoc-actions">
+              <button id="btnToggleGrid"
+                      class="btn btn-secondary mdoc-full mdoc-toggle-tool"
+                      type="button"
+                      data-target="#gridPanel">
+                Grille <span class="mdoc-caret">›</span>
+              </button>
+
+              <button id="btnAddShape"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#shapeToolBox">
+                + Ajouter forme
+              </button>
+
+              <button id="btnAddText"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#textToolBox">
+                + Ajouter texte
+              </button>
+
+              <!-- ✅ Paragraphe (richtext) -->
+              <!-- IMPORTANT : id = btnAddParagraph (côté editor_bootstrap.js) -->
+              <button id="btnAddParagraph"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#richTextToolBox">
+                + Ajouter paragraphe
+              </button>
+
+              <button id="btnAddImage"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#imageToolBox">
+                + Ajouter image
+              </button>
+
+              <button id="btnAddProductPrice"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#productPriceToolBox">
+                + Ajouter prix
+              </button>
+
+              <button id="btnToggleProductBlock"
+                      class="btn btn-secondary mdoc-full mdoc-toggle-tool"
+                      type="button"
+                      data-target="#pb_section">
+                + Bloc produit
+              </button>
+
+              <button id="btnAddStockBadge"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#stockBadgeToolBox">
+                + Ajouter rupture
+              </button>
+
+              <button id="btnAddProductEan"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#productEanToolBox">
+                + Ajouter EAN
+              </button>
+
+              <button id="btnToggleFontsPanel"
+                      class="btn btn-secondary mdoc-toggle-tool"
+                      type="button"
+                      data-target="#fontsPanel">
+                + Ajouter police
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================= -->
+        <!-- 🧩 PANNEAUX (édition / options) -->
+        <!-- ========================= -->
+
+        <!-- ✅ GRILLE (accordéon) -->
+        <div class="mdoc-panel mdoc-panel-collapsible" id="gridPanel" style="display:none;">
+          <div class="mdoc-panel-title">Grille</div>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input type="checkbox" id="gridEnabledChk" />
+            <span>Afficher la grille</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input type="checkbox" id="gridSnapChk" />
+            <span>Grille magnétique (snap)</span>
+          </label>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Taille (px)</label>
+              <select id="gridSizeSel" class="mdoc-input">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+
+            <div class="mdoc-col">
+              <label class="mdoc-label">Opacité</label>
+              <input id="gridOpacityInp" class="mdoc-input" type="number" min="0.05" max="0.5" step="0.01" value="0.12" />
+            </div>
+          </div>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur</label>
+              <input id="gridColorInp" class="mdoc-input mdoc-color" type="color" value="#2c3e50" />
+            </div>
+
+            <div class="mdoc-col">
+              <label class="mdoc-label">Grande grille</label>
+              <select id="gridBigSel" class="mdoc-input">
+                <option value="0">Non</option>
+                <option value="1" selected>Oui</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="mdoc-check" style="margin-top:10px;">
+            <input type="checkbox" id="gridSnapMoveOnlyChk" />
+            <span>Snap uniquement pendant déplacement</span>
+          </label>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            La grille ne bloque pas les clics (pointer-events: none côté overlay).
+          </div>
+        </div>
+
+        <!-- ✅ SHAPES -->
+        <div id="shapeToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Formes</div>
+
+          <div class="mdoc-actions" style="margin-top:8px;">
+            <button id="btnAddRect" class="btn btn-secondary mdoc-full" type="button">
+              + Rectangle
+            </button>
+
+            <button id="btnAddRoundRect" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+              + Rectangle arrondi
+            </button>
+
+            <button id="btnAddLine" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+              + Ligne
+            </button>
+
+            <!-- ✅ Forme masquée (image) -->
+            <button id="btnAddClipShape" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+              + Forme masquée (image)
+            </button>
+          </div>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-panel-title" style="font-size:13px;">Style</div>
+
+          <!-- ✅ Nouveau: Fond Uni / Dégradé -->
+          <label class="mdoc-label" style="margin-top:8px;">Fond</label>
+          <select id="shapeFillType" class="mdoc-input">
+            <option value="solid" selected>Uni</option>
+            <option value="gradient">Dégradé</option>
+          </select>
+
+          <!-- Solid box -->
+          <div id="shapeFillSolidBox">
+            <div class="mdoc-row">
+              <div class="mdoc-col">
+                <label class="mdoc-label">Remplissage (uni)</label>
+                <input id="shapeFill" class="mdoc-input mdoc-color" type="color" value="#ffffff" />
+                <div class="mdoc-hint">Met #ffffff + bordure 0 pour “transparent”.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gradient box -->
+          <div id="shapeFillGradientBox" style="display:none; margin-top:10px;">
+            <div class="mdoc-row">
+              <div class="mdoc-col">
+                <label class="mdoc-label">Type</label>
+                <select id="shapeGradType" class="mdoc-input">
+                  <option value="linear" selected>Linéaire</option>
+                  <option value="radial">Radial</option>
+                </select>
+              </div>
+              <div class="mdoc-col">
+                <label class="mdoc-label">Angle</label>
+                <input id="shapeGradAngle" class="mdoc-input" type="range" min="0" max="360" value="0" />
+                <div class="mdoc-hint"><span id="shapeGradAngleValue">0°</span></div>
+              </div>
+            </div>
+
+            <div class="mdoc-row" style="margin-top:8px;">
+              <div class="mdoc-col">
+                <label class="mdoc-label">Couleur 1</label>
+                <input id="shapeGradColor1" class="mdoc-input mdoc-color" type="color" value="#ff0000" />
+              </div>
+              <div class="mdoc-col">
+                <label class="mdoc-label">Stop 1 (%)</label>
+                <input id="shapeGradPos1" class="mdoc-input" type="number" min="0" max="100" step="1" value="0" />
+              </div>
+            </div>
+
+            <div class="mdoc-row" style="margin-top:8px;">
+              <div class="mdoc-col">
+                <label class="mdoc-label">Couleur 2</label>
+                <input id="shapeGradColor2" class="mdoc-input mdoc-color" type="color" value="#0000ff" />
+              </div>
+              <div class="mdoc-col">
+                <label class="mdoc-label">Stop 2 (%)</label>
+                <input id="shapeGradPos2" class="mdoc-input" type="number" min="0" max="100" step="1" value="100" />
+              </div>
+            </div>
+
+            <div class="mdoc-hint" style="margin-top:10px;">
+              Angle : 0° = gauche → droite • 90° = haut → bas.
+            </div>
+          </div>
+
+          <!-- ✅ Bordure + arrondi (toujours visible, solid OU gradient) -->
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur bordure</label>
+              <input id="shapeStroke" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Épaisseur bordure (px)</label>
+              <input id="shapeStrokeWidth" class="mdoc-input" type="number" min="0" max="40" step="1" value="1" />
+            </div>
+          </div>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Rayon (arrondi)</label>
+              <input id="shapeRadius" class="mdoc-input" type="number" min="0" max="120" step="1" value="12" />
+            </div>
+          </div>
+
+          <div class="mdoc-layer-switch" style="margin-top:10px;">
+            <label class="mdoc-label">Plan</label>
+
+            <div class="layer-toggle">
+              <span class="layer-label">Arrière</span>
+
+              <label class="switch">
+                <input type="checkbox" id="layerSwitchFrontShape" class="js-layer-switch" checked />
+                <span class="slider"></span>
+              </label>
+
+              <span class="layer-label">Premier</span>
+            </div>
+
+            <select id="shapeLayer" class="mdoc-input" style="margin-top:8px;">
+              <option value="back">Arrière plan</option>
+              <option value="front" selected>Premier plan</option>
+            </select>
+          </div>
+
+          <button id="btnShapeApply" class="btn btn-primary mdoc-full" type="button" style="margin-top:10px;">
+            Appliquer le style à la sélection
+          </button>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Clique sur “Rectangle / Rectangle arrondi / Ligne / Forme masquée (image)”, puis clique dans le PDF pour placer l’item.
+          </div>
+        </div>
+
+        <!-- ✅ RICHTEXT (paragraphe) -->
+        <div id="richTextToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Paragraphe</div>
+
+          <div class="mdoc-hint" style="margin-top:6px;">
+            Clique sur “Ajouter paragraphe”, puis clique dans le PDF pour placer la box.
+            Double-clic sur la box pour éditer (gras, tailles, couleurs, police, alignement).
+          </div>
+
+          <div class="mdoc-layer-switch" style="margin-top:10px;">
+            <label class="mdoc-label">Plan</label>
+
+            <div class="layer-toggle">
+              <span class="layer-label">Arrière</span>
+
+              <label class="switch">
+                <input type="checkbox" id="layerSwitchFrontRichText" class="js-layer-switch" checked />
+                <span class="slider"></span>
+              </label>
+
+              <span class="layer-label">Premier</span>
+            </div>
+          </div>
+
+          <button id="btnCancelToolRichText" class="btn btn-danger mdoc-full" type="button" style="margin-top:10px;">
+            Annuler outil
+          </button>
+        </div>
+
+        <!-- ✅ PANEL : IMAGE MASQUÉE -->
+        <div id="clipShapePanel" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Image masquée</div>
+
+          <div class="mdoc-actions" style="margin-top:8px;">
+            <button id="btnClipPickImage" class="btn btn-secondary mdoc-full" type="button">
+              Choisir / Remplacer image
+            </button>
+
+            <button id="btnClipCenterImage" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+              Centrer image
+            </button>
+          </div>
+
+          <hr class="mdoc-sep" />
+
+          <label class="mdoc-label">Zoom</label>
+          <input id="clipZoom" class="mdoc-input" type="range" min="0.5" max="3.0" step="0.01" value="1.0" />
+          <div class="mdoc-hint"><span id="clipZoomVal">1.00×</span></div>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Arrondis (radius)</label>
+              <input id="clipRadius" class="mdoc-input" type="number" min="0" max="200" step="1" value="0" />
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Bordure (px)</label>
+              <input id="clipStrokeWidth" class="mdoc-input" type="number" min="0" max="30" step="0.5" value="1" />
+            </div>
+          </div>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur bordure</label>
+              <input id="clipStrokeColor" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Fond</label>
+              <input id="clipFillColor" class="mdoc-input mdoc-color" type="color" value="#ffffff" />
+            </div>
+          </div>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Layer</label>
+              <select id="clipLayer" class="mdoc-input">
+                <option value="back">Arrière plan</option>
+                <option value="front" selected>Premier plan</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Double-clic sur la forme : choisir/remplacer l’image • SHIFT + drag : déplacer l’image à l’intérieur.
+          </div>
+        </div>
+
+        <!-- ✅ input file dédié clip shape -->
+        <input id="clipShapeFileInput" type="file" accept="image/*" style="display:none;" />
+
+        <!-- ✅ PRODUIT DYNAMIQUE (commun) -->
+        <div id="dynamicCommonBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Produit (dynamique)</div>
+
+          <label class="mdoc-label">Recherche produit</label>
+          <input
+            id="dynProductSearch"
+            class="mdoc-input"
+            type="text"
+            placeholder="Nom, SKU, EAN…"
+            maxlength="80"
+          />
+          <div id="dynProductResults" class="mdoc-fonts-list" style="margin-top:8px;"></div>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-panel-title" style="font-size:13px;">Style</div>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Police</label>
+              <select
+                id="dynFontFamily"
+                class="mdoc-input js-font-select"
+                data-font-select="dyn"
+                name="fontFamily"
+              >
+                <option value="helv">Par défaut (Helvetica)</option>
+              </select>
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Taille</label>
+              <input id="dynFontSize" class="mdoc-input" type="number" min="8" max="120" step="1" value="18" />
+            </div>
+          </div>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Épaisseur</label>
+              <select id="dynFontWeight" class="mdoc-input">
+                <option value="300">300</option>
+                <option value="400">400</option>
+                <option value="700" selected>700</option>
+              </select>
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur</label>
+              <input id="dynColor" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+          </div>
+
+          <hr class="mdoc-sep" />
+
+          <label class="mdoc-label">Fond</label>
+          <select id="dynBgMode" class="mdoc-input">
+            <option value="transparent">Transparent</option>
+            <option value="semi" selected>Blanc semi-transparent</option>
+            <option value="color">Couleur</option>
+          </select>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur du fond</label>
+              <input id="dynBgColor" class="mdoc-input" type="text" value="rgba(255,255,255,0.72)" />
+              <div class="mdoc-hint">Utilisé si “Fond = Couleur” ou pour “semi” si tu veux custom.</div>
+            </div>
+          </div>
+
+          <label class="mdoc-check">
+            <input id="dynBorderEnabled" type="checkbox" />
+            <span>Bordure</span>
+          </label>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur bordure</label>
+              <input id="dynBorderColor" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Épaisseur (px)</label>
+              <input id="dynBorderWidth" class="mdoc-input" type="number" min="0" max="12" step="1" value="1" />
+            </div>
+          </div>
+
+          <div class="mdoc-layer-switch">
+            <label class="mdoc-label">Plan</label>
+
+            <div class="layer-toggle">
+              <span class="layer-label">Arrière</span>
+
+              <label class="switch">
+                <input type="checkbox" id="layerSwitchFrontDyn" class="js-layer-switch" checked />
+                <span class="slider"></span>
+              </label>
+
+              <span class="layer-label">Premier</span>
+            </div>
+          </div>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Clique ensuite dans le PDF pour placer l’élément.
+          </div>
+
+          <button id="btnCancelToolDynamic" class="btn btn-danger mdoc-full" type="button">
+            Annuler outil
+          </button>
+        </div>
+
+        <div id="productPriceToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Prix produit</div>
+
+          <label class="mdoc-label">Type de prix</label>
+          <select id="priceMode" class="mdoc-input">
+            <option value="base" selected>Prix de base (price_ht)</option>
+            <option value="tier">Palier quantité (PriceTier)</option>
+          </select>
+
+          <label class="mdoc-label" style="margin-top:10px;">Palier</label>
+          <select id="tierSelect" class="mdoc-input">
+            <option value="">—</option>
+          </select>
+
+          <label class="mdoc-check" style="margin-top:10px;">
+            <input id="priceIntPlus1pt" type="checkbox" />
+            <span>Entier +1pt (décimales plus petites)</span>
+          </label>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Le palier correspond à <code>PriceTier</code> (qty_min / price_ht).
+          </div>
+        </div>
+
+        <div id="stockBadgeToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Stock / Rupture</div>
+
+          <label class="mdoc-label">Texte si stock = 0</label>
+          <input
+            id="stockText"
+            class="mdoc-input"
+            type="text"
+            value="Rupture de stock"
+            maxlength="120"
+          />
+
+          <label class="mdoc-label" style="margin-top:10px;">Mode LABO</label>
+          <select id="stockModeLabo" class="mdoc-input">
+            <option value="show_stock" selected>Afficher “Dispo stock: X”</option>
+            <option value="show_text">Afficher texte si 0</option>
+            <option value="show_both">Afficher stock + texte si 0</option>
+            <option value="hide">Masquer (utile pour tests)</option>
+          </select>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            En mode AGENT : si stock &gt; 0, rien • si stock = 0, le texte s’affiche.
+          </div>
+        </div>
+
+        <div id="productEanToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">EAN produit</div>
+          <div class="mdoc-hint" style="margin-top:6px;">
+            Choisis un produit via “Produit (dynamique)”, puis clique dans le PDF pour placer l’EAN.
+          </div>
+        </div>
+
+        <!-- TEXTE -->
+        <div id="textToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Texte</div>
+
+          <label class="mdoc-label">Texte</label>
+          <input
+            id="textToolValue"
+            class="mdoc-input"
+            type="text"
+            placeholder="Saisis ton texte…"
+            maxlength="220"
+          />
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Taille</label>
+              <input id="textToolSize" class="mdoc-input" type="number" min="8" max="120" step="1" value="18" />
+            </div>
+
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur</label>
+              <input id="textToolColor" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+          </div>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Épaisseur</label>
+              <select id="textToolWeight" class="mdoc-input">
+                <option value="300">300 (Light)</option>
+                <option value="400" selected>400 (Normal)</option>
+                <option value="700">700 (Bold)</option>
+              </select>
+            </div>
+
+            <div class="mdoc-col">
+              <label class="mdoc-label">Gras (compat)</label>
+              <label class="mdoc-check" style="margin-top:6px;">
+                <input id="textToolBold" type="checkbox" />
+                <span>Bold</span>
+              </label>
+            </div>
+          </div>
+
+          <hr class="mdoc-sep" />
+
+          <label class="mdoc-label">Police</label>
+          <select
+            id="textToolFont"
+            class="mdoc-input js-font-select"
+            data-font-select="text"
+            name="fontFamily"
+          >
+            <option value="helv">Par défaut (Helvetica)</option>
+          </select>
+
+          <hr class="mdoc-sep" />
+
+          <label class="mdoc-label">Fond</label>
+          <select id="textToolBgMode" class="mdoc-input">
+            <option value="transparent">Transparent</option>
+            <option value="semi" selected>Blanc semi-transparent</option>
+            <option value="color">Couleur</option>
+          </select>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur du fond</label>
+              <input id="textToolBgColor" class="mdoc-input mdoc-color" type="color" value="#ffffff" />
+              <div class="mdoc-hint">Utilisé seulement si “Fond = Couleur”.</div>
+            </div>
+          </div>
+
+          <label class="mdoc-check">
+            <input id="textToolBorderEnabled" type="checkbox" />
+            <span>Bordure du fond</span>
+          </label>
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Couleur bordure</label>
+              <input id="textToolBorderColor" class="mdoc-input mdoc-color" type="color" value="#111827" />
+            </div>
+            <div class="mdoc-col">
+              <label class="mdoc-label">Épaisseur (px)</label>
+              <input id="textToolBorderWidth" class="mdoc-input" type="number" min="0" max="12" step="1" value="1" />
+            </div>
+          </div>
+
+          <div class="mdoc-layer-switch">
+            <label class="mdoc-label">Plan</label>
+
+            <div class="layer-toggle">
+              <span class="layer-label">Arrière</span>
+
+              <label class="switch">
+                <input type="checkbox" id="layerSwitchFrontText" class="js-layer-switch" checked />
+                <span class="slider"></span>
+              </label>
+
+              <span class="layer-label">Premier</span>
+            </div>
+          </div>
+
+          <label class="mdoc-label" style="margin-top:10px;">Centrage dans forme</label>
+          <select id="centerTextMode" class="mdoc-input">
+            <option value="x" selected>X (horizontal)</option>
+            <option value="y">Y (vertical)</option>
+            <option value="xy">XY (horizontal + vertical)</option>
+          </select>
+
+          <button id="btnCenterTextInShapeTextPanel" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+            Centrer le texte dans la forme
+          </button>
+
+          <button id="btnCancelToolText" class="btn btn-danger mdoc-full" type="button" style="margin-top:8px;">
+            Annuler outil
+          </button>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Astuce : double-clic sur un texte = édition inline • Entrée = valider • Échap = annuler
+          </div>
+        </div>
+
+        <!-- IMAGE -->
+        <div id="imageToolBox" class="mdoc-panel" style="display:none;">
+          <div class="mdoc-panel-title">Image</div>
+
+          <input id="imageFileInput" type="file" accept="image/*" style="display:none;" />
+
+          <button id="btnPickImage" class="btn btn-secondary mdoc-full" type="button">
+            Choisir une image…
+          </button>
+
+          <div id="imagePickedInfo" class="mdoc-hint"></div>
+
+          <div class="mdoc-layer-switch">
+            <label class="mdoc-label">Plan</label>
+
+            <div class="layer-toggle">
+              <span class="layer-label">Arrière</span>
+
+              <label class="switch">
+                <input type="checkbox" id="layerSwitchFrontImage" class="js-layer-switch" checked />
+                <span class="slider"></span>
+              </label>
+
+              <span class="layer-label">Premier</span>
+            </div>
+          </div>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-row">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Qualité (Plan A)</label>
+              <select id="imageRemoveBgQuality" class="mdoc-input">
+                <option value="fast">Rapide</option>
+                <option value="balanced" selected>Équilibré</option>
+                <option value="best">Max</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="btnImageRemoveBg" class="btn btn-primary mdoc-full" type="button" style="margin-top:8px;">
+            Détourer (qualité pro)
+          </button>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Tolérance (fallback)</label>
+              <input
+                id="imageRemoveBgTolerance"
+                class="mdoc-input"
+                type="number"
+                min="0"
+                max="255"
+                step="1"
+                value="35"
+              />
+              <div class="mdoc-hint">Plan B : supprime les pixels proches du blanc.</div>
+            </div>
+          </div>
+
+          <button id="btnImageRemoveBgFallback" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+            Détourer (fallback)
+          </button>
+
+          <button id="btnImageRevert" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+            Revenir original
+          </button>
+
+          <div id="imageRemoveBgStatus" class="mdoc-hint" style="margin-top:10px;"></div>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-hint">
+            Mode insertion actif : clique dans le PDF pour placer l’image.
+          </div>
+
+          <button id="btnCancelToolImage" class="btn btn-danger mdoc-full" type="button">
+            Annuler outil
+          </button>
+        </div>
+
+        <!-- ✅ BLOC PRODUIT -->
+        <div id="pb_section" class="mdoc-panel mdoc-panel-collapsible" style="display:none;">
+          <div class="mdoc-panel-title">Bloc produit</div>
+
+          <label class="mdoc-label">Recherche produit</label>
+          <input
+            id="pb_query"
+            class="mdoc-input"
+            type="text"
+            placeholder="Nom, SKU, EAN…"
+            maxlength="80"
+          />
+
+          <label class="mdoc-label" style="margin-top:10px;">Résultats</label>
+          <select id="pb_results" class="mdoc-input" style="width:100%;"></select>
+
+          <hr class="mdoc-sep" />
+
+          <div class="mdoc-panel-title" style="font-size:13px;">Contenu</div>
+
+          <label class="mdoc-check" style="margin-top:8px;">
+            <input id="pb_include_image" type="checkbox" checked />
+            <span>Inclure la photo</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_title" type="checkbox" checked />
+            <span>Inclure le titre</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_desc" type="checkbox" checked />
+            <span>Inclure la description</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_sku" type="checkbox" checked />
+            <span>Inclure le SKU</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_ean" type="checkbox" checked />
+            <span>Inclure l’EAN</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_price" type="checkbox" checked />
+            <span>Inclure le prix HT</span>
+          </label>
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_rupture" type="checkbox" checked />
+            <span>Inclure “rupture/stock”</span>
+          </label>
+
+          <hr class="mdoc-sep" />
+
+          <label class="mdoc-check" style="margin-top:6px;">
+            <input id="pb_include_tiers" type="checkbox" />
+            <span>Inclure les tiers prices</span>
+          </label>
+
+          <div class="mdoc-row" style="margin-top:10px;">
+            <div class="mdoc-col">
+              <label class="mdoc-label">Mode tiers</label>
+              <select id="pb_tiers_mode" class="mdoc-input">
+                <option value="tier_selected" selected>Utiliser un tier pour le prix</option>
+                <option value="tiers_table">Afficher les tiers (table)</option>
+              </select>
+            </div>
+
+            <div class="mdoc-col">
+              <label class="mdoc-label">Tier</label>
+              <select id="pb_tier_select" class="mdoc-input">
+                <option value="">—</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="pb_preset">Preset</label>
+            <select id="pb_preset" class="form-control">
+              <option value="left_image">Image à gauche (texte à droite)</option>
+              <option value="top_image">Image en haut (texte dessous)</option>
+            </select>
+          </div>
+
+          <div class="form-row form-row-2">
+            <div>
+              <label for="pb_line_h">Hauteur ligne</label>
+              <input id="pb_line_h" type="number" class="form-control" min="12" max="60" step="1" value="18" />
+            </div>
+
+            <div>
+              <label for="pb_gap">Espace (gap)</label>
+              <input id="pb_gap" type="number" class="form-control" min="0" max="60" step="1" value="8" />
+            </div>
+          </div>
+
+          <button id="btnInsertProductBlock" class="btn btn-primary mdoc-full" type="button" style="margin-top:10px;">
+            Valider bloc produit
+          </button>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Clique sur “Valider bloc produit”, puis clique dans le PDF pour le placer.
+          </div>
+        </div>
+
+        <!-- POLICES -->
+        <div class="mdoc-panel" id="fontsPanel" style="display:none;">
+          <div class="mdoc-panel-title">Polices</div>
+
+          <form id="fontUploadForm" class="mdoc-font-form">
+            <label class="mdoc-label">Nom affiché</label>
+            <input
+              id="fontDisplayName"
+              class="mdoc-input"
+              type="text"
+              placeholder="Ex: Montserrat Bold"
+              required
+              maxlength="60"
+            />
+
+            <label class="mdoc-label" style="margin-top:10px;">Fichier .woff2</label>
+            <input
+              id="fontFileInput"
+              class="mdoc-input"
+              type="file"
+              accept=".woff2,font/woff2"
+              required
+            />
+
+            <button id="btnUploadFont" class="btn btn-primary mdoc-full" type="submit" style="margin-top:10px;">
+              Importer la police
+            </button>
+
+            <div id="fontUploadStatus" class="mdoc-hint" style="margin-top:8px;"></div>
+          </form>
+
+          <hr class="mdoc-sep" />
+
+          <div id="fontsList" class="mdoc-fonts-list" style="margin-top:10px;"></div>
+
+          <div class="mdoc-hint" style="margin-top:10px;">
+            Astuce : tu peux importer plusieurs polices et les réutiliser dans tous les documents du labo.
+          </div>
+        </div>
+
+        <!-- ACTIONS BAS -->
+        <div class="mdoc-panel">
+          <button id="btnDeleteSelected" class="btn btn-danger mdoc-full" type="button" disabled>
+            Supprimer sélection
+          </button>
+
+          <button id="btnAlignVertical" class="btn btn-secondary mdoc-full" type="button" style="margin-bottom:8px;">
+            Aligner verticalement
+          </button>
+
+          <button class="btn" type="button" data-btn-append-page>
+            + Ajouter une page <span class="badge" data-append-pages-badge>0</span>
+          </button>
+
+          <button class="btn" type="button" data-btn-remove-appended-page disabled>
+            Supprimer la dernière page ajoutée
+          </button>
+
+          <button id="btnSaveDraft" class="btn btn-primary mdoc-full" type="button">
+            Enregistrer
+          </button>
+
+          <button id="btnPublish" class="btn btn-secondary mdoc-full" type="button" style="margin-top:8px;">
+            Publier
+          </button>
+
+          <div id="publishStatus" class="mdoc-status" style="margin-top:8px;"></div>
+          <div id="editorStatus" class="mdoc-status"></div>
+
+          <div class="mdoc-tip">
+            Astuces : clic = sélectionner • drag = déplacer • poignées = redimensionner • touche Suppr = supprimer
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- COLONNE DROITE : PDF -->
+    <main class="mdoc-main">
+      <div class="mdoc-canvas-shell">
+        <div class="mdoc-canvas-toolbar">
+          <div class="mdoc-badge">PDF</div>
+          <div class="mdoc-toolbar-right">
+            <span class="mdoc-muted">Zoom géré par PDF_SCALE (JS)</span>
+          </div>
+        </div>
+
+        <div id="pdfContainer" class="mdoc-pdf">
+          Chargement du PDF…
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+{# =========================================================
+   ✅ MODAL Quill (éditeur paragraphe HTML)
+   - Ouvert via JS (paragraph_editor.js)
+   ========================================================= #}
+<div id="zh-paragraph-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+  <div style="width:min(920px, 96vw); height:min(680px, 92vh); margin:4vh auto; background:#fff; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="padding:12px 14px; border-bottom:1px solid rgba(17,24,39,.12); display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-weight:700;">Édition paragraphe</div>
+      <div style="display:flex; gap:8px;">
+        <button id="zh-paragraph-cancel" class="btn btn-secondary" type="button">Annuler</button>
+        <button id="zh-paragraph-save" class="btn btn-primary" type="button">Enregistrer</button>
+      </div>
+    </div>
+
+    <div id="zh-quill-toolbar" style="border-bottom:1px solid rgba(17,24,39,.12); padding:8px 10px;"></div>
+    <div id="zh-quill-editor" style="flex:1; overflow:auto;"></div>
+  </div>
+</div>
+
+<script src="/static/vendor/pdfjs/pdf.min.js"></script>
+<script>
+  // pdf.min.js expose window.pdfjsLib
+  if (!window.pdfjsLib) {
+    console.error("pdfjsLib indisponible (pdf.min.js non chargé).");
+  } else {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/static/vendor/pdfjs/pdf.worker.min.js";
+  }
+</script>
+
+<script type="module" src="/static/labo/editor/editor_bootstrap.js?v=12"></script>
+
+<script>
+  // bouton haut "Enregistrer" => bouton bas
+  (function () {
+    const top = document.getElementById("btnSaveDraftTop");
+    const bottom = document.getElementById("btnSaveDraft");
+    if (top && bottom) top.addEventListener("click", () => bottom.click());
+  })();
+
+  // bouton haut "Publier" => bouton bas
+  (function () {
+    const top = document.getElementById("btnPublishTop");
+    const bottom = document.getElementById("btnPublish");
+    if (top && bottom) top.addEventListener("click", () => bottom.click());
+  })();
+</script>
+
+<script>
+(function () {
+  const buttons = Array.from(document.querySelectorAll(".mdoc-toggle-tool[data-target]"));
+
+  // panelId -> cancelBtnId (pour remettre l'outil ZenHub "au calme" quand on replie)
+  const CANCEL_BY_PANEL = {
+    "#textToolBox": "#btnCancelToolText",
+    "#imageToolBox": "#btnCancelToolImage",
+    "#dynamicCommonBox": "#btnCancelToolDynamic",
+    "#richTextToolBox": "#btnCancelToolRichText", // ✅ paragraphe
+  };
+
+  function isOpen(panel) {
+    if (!panel) return false;
+    const ds = panel.style.display;
+    if (ds) return ds !== "none";
+    return getComputedStyle(panel).display !== "none";
+  }
+
+  function closePanel(sel, btn) {
+    const panel = document.querySelector(sel);
+    if (!panel) return;
+
+    const cancelSel = CANCEL_BY_PANEL[sel];
+    if (cancelSel) {
+      const cancelBtn = document.querySelector(cancelSel);
+      if (cancelBtn) cancelBtn.click();
+    }
+
+    panel.style.display = "none";
+    if (btn) {
+      btn.classList.remove("is-active");
+      btn.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  function closeAll(exceptSel) {
+    buttons.forEach(b => {
+      const sel = b.getAttribute("data-target");
+      if (!sel || sel === exceptSel) return;
+      closePanel(sel, b);
+    });
+  }
+
+  buttons.forEach(btn => {
+    const sel = btn.getAttribute("data-target");
+    if (!sel) return;
+
+    const panel = document.querySelector(sel);
+    if (!panel) return;
+
+    btn.setAttribute("aria-expanded", isOpen(panel) ? "true" : "false");
+
+    btn.addEventListener("click", () => {
+      const panelNowOpen = isOpen(panel);
+
+      if (panelNowOpen) {
+        closePanel(sel, btn);
+        return;
+      }
+
+      closeAll(sel);
+
+      panel.style.display = "block";
+      btn.classList.add("is-active");
+      btn.setAttribute("aria-expanded", "true");
+    });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  const toolSection = document.getElementById("toolSection");
+  const toolToggle  = document.getElementById("toolSectionToggle");
+  const toolBody    = document.getElementById("toolSectionBody");
+  const toolIcon    = toolToggle?.querySelector(".mdoc-collapsible-icon");
+
+  function setToolsCollapsed(collapsed) {
+    if (!toolSection || !toolBody) return;
+    toolSection.setAttribute("data-collapsed", collapsed ? "1" : "0");
+    toolBody.style.display = collapsed ? "none" : "block";
+    if (toolToggle) toolToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    if (toolIcon) toolIcon.textContent = collapsed ? "▸" : "▾";
+  }
+
+  if (toolToggle) {
+    toolToggle.addEventListener("click", () => {
+      const isCollapsed = toolSection?.getAttribute("data-collapsed") === "1";
+      setToolsCollapsed(!isCollapsed);
+    });
+  }
+
+  window.__ZENHUB_TOOLSECTION__ = { setCollapsed: setToolsCollapsed };
+  setToolsCollapsed(false);
+})();
+</script>
+
+<script>
+(function () {
+  const ft = document.getElementById("shapeFillType");
+  const solidBox = document.getElementById("shapeFillSolidBox");
+  const gradBox = document.getElementById("shapeFillGradientBox");
+  const a = document.getElementById("shapeGradAngle");
+  const aLbl = document.getElementById("shapeGradAngleValue");
+
+  function refresh() {
+    const isGrad = (ft && ft.value === "gradient");
+    if (solidBox) solidBox.style.display = isGrad ? "none" : "";
+    if (gradBox) gradBox.style.display = isGrad ? "" : "none";
+  }
+
+  function refreshAngle() {
+    if (aLbl && a) aLbl.textContent = `${a.value || 0}°`;
+  }
+
+  if (ft) ft.addEventListener("change", refresh);
+  if (a) a.addEventListener("input", refreshAngle);
+
+  refresh();
+  refreshAngle();
+})();
+</script>
+
+<!-- ✅ micro-binding UI (affichage gradient) côté HTML -->
+<script>
+(function () {
+  const ft = document.getElementById("shapeFillType");
+  const solidBox = document.getElementById("shapeFillSolidBox");
+  const gradBox = document.getElementById("shapeFillGradientBox");
+  const en3 = document.getElementById("shapeGradEnable3");
+  const c3 = document.getElementById("shapeGradColor3");
+  const p3 = document.getElementById("shapeGradPos3");
+  const a = document.getElementById("shapeGradAngle");
+  const aLbl = document.getElementById("shapeGradAngleValue");
+
+  function refresh() {
+    const isGrad = (ft && ft.value === "gradient");
+    if (solidBox) solidBox.style.display = isGrad ? "none" : "";
+    if (gradBox) gradBox.style.display = isGrad ? "" : "none";
+  }
+
+  function refresh3() {
+    const ok = !!(en3 && en3.checked);
+    if (c3) c3.disabled = !ok;
+    if (p3) p3.disabled = !ok;
+  }
+
+  function refreshAngle() {
+    if (aLbl && a) aLbl.textContent = `${a.value || 0}°`;
+  }
+
+  if (ft) ft.addEventListener("change", refresh);
+  if (en3) en3.addEventListener("change", refresh3);
+  if (a) a.addEventListener("input", refreshAngle);
+
+  refresh();
+  refresh3();
+  refreshAngle();
+})();
+</script>
+
+{% endblock %}

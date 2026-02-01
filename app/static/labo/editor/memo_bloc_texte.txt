@@ -1,0 +1,276 @@
+MÉMO — SYSTÈME TEXTE & TOOLBAR (ZenHub / LABO Editor)
+🎯 Objectif global
+
+Mettre en place un système de toolbar texte unique et réutilisable (police, taille, couleur, gras, italique, underline, transform…) utilisable par tous les futurs blocs texte :
+
+Texte simple (single-line)
+
+Paragraphe
+
+Texte autour d’un cercle
+
+Texte suivant un chemin (path / plume)
+
+Tout autre bloc texte futur
+
+👉 La toolbar ne dépend jamais du type de rendu (HTML, SVG, Canvas).
+👉 Chaque bloc texte implémente seulement une interface minimale (“TextHost”).
+
+🧱 Architecture des fichiers
+Fichiers cœur (communs, réutilisables)
+
+text_toolbar_tools.js
+→ UI de la toolbar (boutons, popovers, événements)
+
+color_picker_tools.js
+→ Color picker type Google (popover indépendant)
+
+font_picker_tools.js
+→ Font picker + resolveFontFamily + helpers
+
+text_toolbar_bridge.js
+→ Pont universel entre la toolbar et n’importe quel bloc texte
+
+Fichiers blocs texte
+
+text_simple_tools.js
+
+text_paragraph_tools.js
+
+text_circle_tools.js
+
+text_path_tools.js
+
+etc.
+
+Chaque bloc texte importe la toolbar via le bridge, jamais directement.
+
+🔌 Le concept clé : TextToolbarBridge
+
+La toolbar ne connaît pas le bloc texte.
+Le bloc texte expose une interface minimale appelée ici TextHost.
+
+Création du bridge
+state.toolbar = TextToolbarBridge.createTextToolbarBridge({
+  hostEl,
+  textHost: { ... }
+});
+
+📜 Interface TextHost (contrat obligatoire)
+
+Chaque bloc texte doit fournir ces méthodes :
+
+1️⃣ getContext()
+
+Retourne l’état actuel à afficher dans la toolbar.
+
+getContext: () => ({
+  isVisible: true,
+  anchorRect,
+  hostRect,
+  fonts,
+  fontKey,
+  currentFontKey,
+  size,
+  color,
+  align,
+  bold,
+  italic,
+  underline,
+  transform,
+})
+
+
+⚠️ Aucune logique UI ici, uniquement des valeurs.
+
+2️⃣ onAction(action)
+
+Reçoit toutes les actions de la toolbar.
+
+onAction({ type, value })
+
+
+Types possibles :
+
+font
+
+size
+
+color
+
+bold
+
+italic
+
+underline
+
+align
+
+transform
+
+👉 La logique est toujours côté bloc texte.
+
+3️⃣ onBeforeOpenColorPicker()
+
+⚠️ OBLIGATOIRE pour éviter la perte de sélection
+
+onBeforeOpenColorPicker: () => {
+  if (!isEditing()) return;
+  saveSelectionRange(editEl);
+  highlightSavedSelection(editEl);
+}
+
+4️⃣ onBeforeOpenFontPicker()
+
+Même principe que pour la couleur.
+
+✍️ Gestion de la sélection texte (RÈGLES CRITIQUES)
+Fonctions standard à toujours utiliser
+
+saveSelectionRange(editEl)
+
+restoreSelectionRange(editEl)
+
+highlightSavedSelection(editEl)
+
+clearSelectionHighlight(editEl)
+
+Règles
+
+Toujours sauvegarder la sélection AVANT l’ouverture d’un popover
+
+Toujours restaurer la sélection AVANT d’appliquer un style
+
+Le popover ne doit jamais voler le focus
+
+🎨 Couleur du texte (point sensible)
+Problème rencontré
+
+Perte d’espaces
+
+Spans imbriqués
+
+Sélections corrompues
+
+Solution validée
+
+Utiliser Range.extractContents()
+
+Nettoyer les couleurs existantes
+
+Re-wrapping propre
+
+Ne jamais utiliser innerText pour reconstruire le texte
+
+Fonctions clés
+
+applyColorToSelection(editEl, color)
+
+extractPlainPreserveSpaces(editEl)
+
+❌ Ne jamais faire .replace(/\s+/g, " ") après une couleur
+
+🔤 Récupération du texte (IMPORTANT)
+❌ À éviter
+edit.innerText.replace(/\s+/g, " ")
+
+✅ À utiliser
+extractPlainPreserveSpaces(edit)
+
+
+Cette fonction :
+
+conserve les espaces
+
+enlève uniquement :
+
+ZWSP (\u200B)
+
+retours ligne
+
+ne casse pas les mots
+
+🔁 Cycle de vie d’un bloc texte
+Sélection
+
+state.selectedId = id
+
+toolbar.update()
+
+Double clic
+
+Passage en édition
+
+Focus sur contentEditable
+
+Création du listener selectionchange
+
+Action toolbar
+
+restoreSelectionRange
+
+apply style
+
+saveSelectionRange
+
+update object (o.html, o.text)
+
+render
+
+Désélection
+
+toolbar.closePopovers()
+
+exitTextEdit(true)
+
+🧠 Principe clé pour les futurs blocs (texte cercle / path)
+
+La toolbar travaille TOUJOURS sur un contentEditable “source”
+
+Le rendu (SVG textPath, canvas…) est une projection
+
+Le style partiel est stocké via :
+
+html
+
+ou runs[] (évolution future)
+
+La toolbar ne sait pas si le texte est droit, courbé ou libre
+
+🧪 Debug conseillé (quand ça déraille)
+dbgChars("BEFORE", edit.textContent);
+dbgChars("AFTER", edit.textContent);
+console.log(edit.innerHTML);
+
+
+Permet de détecter :
+
+NBSP
+
+ZWSP
+
+suppressions involontaires
+
+✅ Règles d’or (à toujours respecter)
+
+❌ Pas de logique toolbar dans les blocs
+
+✅ 1 toolbar unique, branchée via bridge
+
+❌ Pas de innerText pour reconstruire le texte stylé
+
+✅ Toujours sauver/restaurer la sélection
+
+✅ Toujours préserver les espaces
+
+✅ Le rendu est indépendant de l’édition
+
+🧭 Vision long terme
+
+Ce système permet :
+
+d’ajouter de nouveaux types de texte sans toucher à la toolbar
+
+d’avoir un comportement cohérent partout
+
+d’évoluer vers des styles riches (runs, SVG avancé, PDF)

@@ -1,0 +1,105 @@
+{# app/templates/labo/product_stats.html #}
+{% extends "_layouts/app.html" %}
+
+{% block content %}
+<div class="app-page">
+  <div class="app-page-header">
+    <h1>{{ _("labo.product_stats.title") or "Statistiques produit" }}</h1>
+  </div>
+
+  <div id="productStatsRoot"
+       data-product-id="{{ product.id }}"
+       class="card"
+       style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- En-tête produit -->
+    <div class="card">
+      <h2 style="margin:0 0 8px;">{{ product.name }}</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:0.9rem;">
+        <div><strong>SKU :</strong> {{ product.sku }}</div>
+        <div><strong>EAN :</strong> {{ product.ean13 or "-" }}</div>
+        <div><strong>Labo :</strong> {{ labo.name }}</div>
+        <div><strong>Prix HT catalogue :</strong> {{ "%.2f"|format(product.price_ht or 0) }} €</div>
+        <div><strong>Stock actuel :</strong> {{ product.stock or 0 }}</div>
+      </div>
+    </div>
+
+    <!-- Cards stats globales -->
+    <div class="card">
+      <h3 style="margin-top:0;">{{ _("labo.product_stats.global_title") or "Statistiques globales" }}</h3>
+      <div id="globalStats" class="stats-grid">
+        <div style="opacity:.6;">Chargement...</div>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="card">
+      <h3 style="margin-top:0;">{{ _("labo.product_stats.charts_title") or "Évolution des ventes" }}</h3>
+      <div style="display:grid;grid-template-columns:1fr;gap:24px;">
+
+        <div style="height:220px;">
+          <h4 style="margin-bottom:8px;">Quantités vendues (12 derniers mois)</h4>
+          <canvas id="chartMonthlyQty"></canvas>
+        </div>
+
+        <div style="height:220px;">
+          <h4 style="margin-bottom:8px;">CA mensuel HT (12 derniers mois)</h4>
+          <canvas id="chartMonthlyRevenue"></canvas>
+        </div>
+
+        <div style="height:260px;">
+          <h4 style="margin-bottom:8px;">Top 10 clients (CA HT)</h4>
+          <canvas id="chartTopClients"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau Top clients -->
+    <div class="card">
+      <h3 style="margin-top:0;">Top clients</h3>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th class="ta-right">Quantité totale</th>
+              <th class="ta-right">CA total HT</th>
+              <th>Dernier achat</th>
+            </tr>
+          </thead>
+          <tbody id="topClientsBody">
+            <tr><td colspan="4" style="text-align:center;opacity:.6;">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tableau liste ventes -->
+    <div class="card">
+      <h3 style="margin-top:0;">Ventes du produit</h3>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>N° doc</th>
+              <th>Client</th>
+              <th class="ta-right">Qté</th>
+              <th class="ta-right">PU HT</th>
+              <th class="ta-right">Total HT</th>
+            </tr>
+          </thead>
+          <tbody id="salesListBody">
+            <tr><td colspan="7" style="text-align:center;opacity:.6;">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="/static/labo/products.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/labo/product_stats.js?v=1"></script>
+{% endblock %}

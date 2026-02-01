@@ -1,0 +1,464 @@
+/* app/static/labo/editor/editor_ui.css */
+/* ============================================================
+   BASE
+============================================================ */
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+button, input, select { font-family: inherit; }
+.hidden { display: none !important; }
+.muted { color: #6b7280; }
+.small { font-size: 12px; }
+
+/* ============================================================
+   LAYOUT (4 ZONES)
+============================================================ */
+.editor {
+  display: grid;
+  grid-template-columns: 56px 220px 1fr 300px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+.btn {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+.btn:hover { background: #f9fafb; }
+.btn.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.btn.primary:hover { filter: brightness(0.95); }
+
+/* ============================================================
+   1) TOOL RAIL
+============================================================ */
+.tool-rail {
+  background: #0b1220;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 8px;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.tool-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+}
+.tool-btn:hover { background: rgba(37, 99, 235, .9); border-color: rgba(37, 99, 235, .9); }
+.tool-btn.active { background: rgba(37, 99, 235, .9); border-color: rgba(37, 99, 235, .9); }
+
+.tool-btn[data-tooltip] { position: relative; }
+.tool-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #0b1220;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 10px 20px rgba(0,0,0,.25);
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* ============================================================
+   2) PAGES
+============================================================ */
+.pages-panel {
+  background: #eef2f7;
+  border-right: 1px solid #d1d5db;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.pages-list {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.page-thumb {
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.page-thumb.active { border-color: #2563eb; }
+.page-thumb .mini {
+  height: 120px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f9fafb, #eef2f7);
+  border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+.page-thumb .mini::after {
+  content: "";
+  position: absolute;
+  inset: 14px 18px 14px 18px;
+  border-radius: 8px;
+  border: 1px dashed rgba(0,0,0,.12);
+}
+.page-thumb .label {
+  font-size: 12px;
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.page-thumb .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.page-thumb .delete {
+  color: #ef4444;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ============================================================
+   3) CANVAS
+============================================================ */
+.canvas-wrap {
+  background: #d7dde6;
+  position: relative;
+  overflow: auto;
+}
+.canvas-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(243,244,246,.94);
+  border-bottom: 1px solid #d1d5db;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  backdrop-filter: blur(8px);
+}
+.canvas-stage {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+.zoom-pill {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+}
+.page {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(0,0,0,.22);
+  transform-origin: top center;
+  border-radius: 2px;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+}
+.uiLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.obj {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+}
+.obj.selected {
+  outline: 2px dashed #2563eb;
+  outline-offset: 2px;
+}
+.obj .placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: rgba(156, 163, 175, .7);
+  border: 1px solid rgba(0,0,0,.08);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: rgba(17,24,39,.85);
+}
+
+/* ============================================================
+   4) OPTIONS
+============================================================ */
+.options-panel {
+  background: #f9fafb;
+  border-left: 1px solid #d1d5db;
+  padding: 14px;
+  overflow: auto;
+}
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.field { margin-bottom: 10px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.field input, .field select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 12px 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 1100px) {
+  .editor { grid-template-columns: 56px 200px 1fr 260px; }
+}
+@media (max-width: 900px) {
+  .editor { grid-template-columns: 56px 1fr; grid-template-rows: auto 1fr auto; }
+  .pages-panel, .options-panel { display: none; } /* sandbox mobile minimal */
+}
+
+
+/* ============================================================
+   UI LAYER: selection box + handles
+============================================================ */
+.uiLayer { pointer-events: none; }
+
+.selBox {
+  position: absolute;
+  pointer-events: none; /* handles seront en pointer-events:auto */
+  outline: 2px dashed #2563eb;
+  outline-offset: 2px;
+  transform-origin: center center;
+  
+}
+.selBox { pointer-events: auto; }    
+.selBox .handle, .selBox .rotHandle { pointer-events: auto; }
+.selBox .handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #2563eb;
+  box-shadow: 0 6px 14px rgba(0,0,0,.18);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.selBox .handle[data-h="n"]  { left: 50%; top: -6px; transform: translateX(-50%); cursor: ns-resize; }
+.selBox .handle[data-h="s"]  { left: 50%; bottom: -6px; transform: translateX(-50%); cursor: ns-resize; }
+.selBox .handle[data-h="e"]  { right: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.selBox .handle[data-h="w"]  { left: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+.selBox .handle[data-h="ne"] { right: -6px; top: -6px; cursor: nesw-resize; }
+.selBox .handle[data-h="nw"] { left: -6px; top: -6px; cursor: nwse-resize; }
+.selBox .handle[data-h="se"] { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.selBox .handle[data-h="sw"] { left: -6px; bottom: -6px; cursor: nesw-resize; }
+
+.selBox .rotLine {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  width: 0;
+  height: 18px;
+  border-left: 2px solid #2563eb;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.selBox .rotHandle {
+  position: absolute;
+  left: 50%;
+  top: -34px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #2563eb;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 14px rgba(0,0,0,.18);
+  pointer-events: auto;
+  cursor: grab;
+}
+.selBox .rotHandle:active { cursor: grabbing; }
+
+
+/* --- Shape Picker (popover) ---------------------------------------------- */
+.shape-picker-pop {
+  position: fixed;
+  z-index: 100000;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid rgba(17,24,39,0.12);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.14);
+  border-radius: 14px;
+  padding: 10px;
+  display: none;
+  width: 260px;
+}
+
+.shape-picker-pop.is-open { display: block; }
+
+.shape-picker-title{
+  font-size: 12px;
+  color: rgba(17,24,39,0.7);
+  margin: 2px 4px 8px 4px;
+}
+
+.shape-picker-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.shape-picker-btn{
+  height: 64px;
+  border-radius: 12px;
+  border: 1px solid rgba(17,24,39,0.12);
+  background: #fff;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap: 6px;
+  transition: .12s ease;
+}
+
+.shape-picker-btn:hover{
+  border-color: rgba(37,99,235,.45);
+  box-shadow: 0 10px 22px rgba(37,99,235,.10);
+  transform: translateY(-1px);
+}
+
+.shape-picker-btn svg{
+  width: 24px;
+  height: 24px;
+}
+
+.shape-picker-btn span{
+  font-size: 11px;
+  color: rgba(17,24,39,0.75);
+}
+
+/* Paragraphe : bordure uniquement au survol (comme text_simple) */
+.overlay .obj[data-type="text_paragraph"]{
+  outline: 0;
+  outline-offset: 2px;
+}
+
+.overlay .obj[data-type="text_paragraph"]:hover{
+  outline: 1px dashed rgba(0,0,0,.45);
+}
+
+/* curseurs */
+.overlay .obj[data-type="text_paragraph"] { cursor: move; user-select: none; }
+.overlay .obj[data-type="text_paragraph"] [data-role="richtext"]{
+  cursor: text;
+  user-select: text;
+}
+.anno-object[data-type="text_paragraph"] [data-role="richtext"]{
+  position:absolute; inset:0;
+  outline:none;
+  z-index:2;
+  pointer-events:auto; /* ✅ important */
+}
+/* hors édition: le texte ne doit PAS capter la souris */
+.anno-object[data-type="text_paragraph"]:not(.is-editing) [data-role="richtext"]{
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-select:none;
+  cursor:inherit;
+}
+
+/* en édition: hit-layer off, texte on */
+.anno-object[data-type="text_paragraph"].is-editing .para-hit{
+  pointer-events:none;
+}
+
+.anno-object[data-type="text_paragraph"].is-editing [data-role="richtext"]{
+  pointer-events:auto;
+  user-select:text !important;
+  -webkit-user-select:text !important;
+  cursor:text;
+  background:transparent !important;
+}
+
+/* Force la toolbar en mode horizontal */
+.tt-toolbar[data-zh-toolbar="1"]{
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+
+  width: auto !important;
+  max-width: calc(100vw - 24px) !important;
+  padding: 10px 10px !important;
+}
+
+/* Si tes boutons/sections sont dans des “rows” internes, on les met aussi en ligne */
+.tt-toolbar[data-zh-toolbar="1"] .tt-row,
+.tt-toolbar[data-zh-toolbar="1"] .tt-group{
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Empêche les boutons de prendre toute la largeur (ce qui force la colonne) */
+.tt-toolbar[data-zh-toolbar="1"] button,
+.tt-toolbar[data-zh-toolbar="1"] select{
+  width: auto !important;
+}

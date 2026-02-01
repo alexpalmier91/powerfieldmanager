@@ -1,0 +1,38 @@
+{# app/templates/_layouts/minimal.html #}
+<!DOCTYPE html>
+<html lang="{{ lang|default('fr') }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}ZenHub{% endblock %}</title>
+
+  {# ✅ réutilise ton CSS global si tu en as un #}
+  <link rel="stylesheet" href="/static/app.css?v=1">
+  <link rel="stylesheet" href="/static/theme.css?v=1">
+
+  <style>
+    body { margin:0; background:#f3f4f6; }
+    .min-wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+    .min-topbar{
+      position: sticky; top:0; z-index: 50;
+      background: rgba(243,244,246,0.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .min-topbar-inner{
+      max-width:1280px; margin:0 auto; padding:10px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  {% block body %}
+    {% block content %}{% endblock %}
+  {% endblock %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

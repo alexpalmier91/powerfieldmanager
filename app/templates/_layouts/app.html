@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="{{ lang|default('fr') }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Power Field Manager{% endblock %}</title>
+
+  <!-- ✅ bon fichier CSS -->
+  <link rel="stylesheet" href="/static/css/app_layout.css" />
+  {% block head %}{% endblock %}
+</head>
+
+<body data-lang="{{ lang|default('fr') }}">
+
+  <!-- Bandeau impersonation -->
+  <div id="impersonationBanner" style="display:none; background:#FEF3C7; color:#92400E; font-weight:500;
+       padding:10px 15px; border-bottom:1px solid #FCD34D; text-align:center;">
+    🕵️ Vous êtes connecté en tant qu’<strong>Agent</strong>.
+    <button id="stopImpersonation"
+      style="margin-left:10px; padding:3px 10px; border:none; background:#F59E0B; color:white;
+      border-radius:4px; cursor:pointer;">Revenir en Superuser</button>
+  </div>
+
+  <!-- ✅ classe attendue par la CSS -->
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigation latérale">
+      <div class="brand">
+        <button id="toggleSidebar" class="hamburger" aria-label="Ouvrir/fermer le menu">☰</button>
+        <img src="/static/img/pfm-logo.png" class="logo" alt="Logo" />
+        <span class="app-name">Power Field Manager</span>
+      </div>
+      {% include "_partials/sidebar.html" %}
+    </aside>
+
+    <main class="content" role="main">
+      <header class="topbar" role="banner">
+        <div class="breadcrumb">
+          {% block breadcrumb %}{% endblock %}
+        </div>
+
+        <div class="topbar-right">
+          <!-- Sélecteur de langue -->
+          <div class="lang-switcher" style="margin-right:8px;">
+            <select id="lang-switcher" aria-label="Changer de langue">
+              <option value="fr" {% if lang == 'fr' %}selected{% endif %}>FR</option>
+              <option value="en" {% if lang == 'en' %}selected{% endif %}>EN</option>
+            </select>
+          </div>
+
+          {% block topbar_right %}{% endblock %}
+        </div>
+      </header>
+
+      <section class="page" aria-live="polite">
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
+
+  <!-- ✅ scripts globaux -->
+  <script type="module" src="/static/js/app_layout.js"></script>
+  <script type="module" src="/static/js/impersonation_banner.js"></script>
+  <script src="/static/js/logout.js?v=20251211-logout-final2"></script>
+
+  <!-- Gestion du sélecteur de langue -->
+  <script>
+    (function () {
+      var sel = document.getElementById("lang-switcher");
+      if (!sel) return;
+
+      sel.addEventListener("change", function (e) {
+        var lang = e.target.value || "fr";
+        // Cookie valable 1 an, sur tout le site
+        document.cookie = "lang=" + lang + "; path=/; max-age=" + (60 * 60 * 24 * 365);
+        window.location.reload();
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

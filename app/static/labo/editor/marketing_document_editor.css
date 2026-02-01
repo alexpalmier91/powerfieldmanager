@@ -1,0 +1,1250 @@
+/* app/static/labo/editor/marketing_document_editor.css */
+
+:root{
+  --mdoc-bg: #f6f7fb;
+  --mdoc-card: #ffffff;
+  --mdoc-border: rgba(17,24,39,0.12);
+  --mdoc-text: #111827;
+  --mdoc-muted: #6b7280;
+  --mdoc-shadow: 0 10px 30px rgba(0,0,0,.06);
+  --mdoc-radius: 14px;
+}
+
+/* wrapper */
+.mdoc-editor{
+  margin-top: 14px;
+}
+
+/* header */
+.mdoc-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding: 14px 16px;
+  background: var(--mdoc-card);
+  border: 1px solid var(--mdoc-border);
+  border-radius: var(--mdoc-radius);
+  box-shadow: var(--mdoc-shadow);
+}
+
+.mdoc-title{
+  margin:0;
+  font-size: 20px;
+  color: var(--mdoc-text);
+}
+
+.mdoc-subtitle{
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--mdoc-muted);
+}
+
+.mdoc-header-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+/* main layout */
+.mdoc-layout{
+  display:flex;
+  gap: 14px;
+  margin-top: 14px;
+  align-items:flex-start;
+}
+
+/* sidebar */
+.mdoc-sidebar{
+  width: 320px;
+  flex: 0 0 320px;
+  position: sticky;
+  top: 14px;
+  align-self: flex-start;
+}
+
+.mdoc-sidebar-inner{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+/* panel */
+.mdoc-panel{
+  background: var(--mdoc-card);
+  border: 1px solid var(--mdoc-border);
+  border-radius: var(--mdoc-radius);
+  box-shadow: var(--mdoc-shadow);
+  padding: 12px;
+}
+
+.mdoc-panel-title{
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--mdoc-text);
+  margin-bottom: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.mdoc-actions{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+/* form */
+.mdoc-label{
+  display:block;
+  font-size:12px;
+  color: var(--mdoc-muted);
+  margin-bottom: 6px;
+}
+
+.mdoc-input{
+  width:100%;
+  padding: 9px 10px;
+  border: 1px solid rgba(17,24,39,0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--mdoc-text);
+  outline: none;
+}
+
+.mdoc-input:focus{
+  border-color: rgba(37,99,235,0.6);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.mdoc-row{
+  display:flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mdoc-col{ flex:1; }
+
+.mdoc-color{
+  padding: 4px 6px;
+  height: 40px;
+}
+
+.mdoc-check{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--mdoc-text);
+}
+
+.mdoc-hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--mdoc-muted);
+  line-height: 1.35;
+}
+
+.mdoc-full{ width:100%; margin-top: 10px; }
+
+.mdoc-status{
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--mdoc-muted);
+  min-height: 18px;
+}
+
+.mdoc-tip{
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--mdoc-muted);
+  padding-top: 10px;
+  border-top: 1px dashed rgba(17,24,39,0.15);
+}
+
+/* main area */
+.mdoc-main{
+  flex: 1;
+  min-width: 0;
+}
+
+/* PDF shell */
+.mdoc-canvas-shell{
+  background: var(--mdoc-bg);
+  border: 1px solid var(--mdoc-border);
+  border-radius: var(--mdoc-radius);
+  box-shadow: var(--mdoc-shadow);
+  overflow: hidden;
+}
+
+/* small toolbar above PDF */
+.mdoc-canvas-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--mdoc-border);
+}
+
+.mdoc-badge{
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mdoc-text);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(17,24,39,0.12);
+  background: rgba(17,24,39,0.03);
+}
+
+.mdoc-muted{
+  font-size: 12px;
+  color: var(--mdoc-muted);
+}
+
+/* PDF container */
+.mdoc-pdf{
+  padding: 14px;
+  overflow: auto;
+  max-height: calc(100vh - 160px);
+}
+
+/* page wrap (optional, but nice) */
+.pdf-page-wrap{
+  background: #fff;
+  border: 1px solid rgba(17,24,39,0.10);
+  border-radius: 14px;
+  box-shadow: 0 12px 26px rgba(0,0,0,0.06);
+  margin: 0 auto 16px auto;
+}
+
+/* overlay objects */
+.anno-object{
+  touch-action: none; /* important for pointer drag on some browsers */
+}
+
+/* handles look a bit smoother */
+.anno-handle{
+  opacity: 0.95;
+}
+.mdoc-sep {
+  border: none;
+  border-top: 1px solid rgba(17, 24, 39, 0.10);
+  margin: 12px 0;
+}
+
+.mdoc-font-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255,255,255,0.7);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.mdoc-font-left {
+  min-width: 0;
+}
+
+.mdoc-font-name {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mdoc-font-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.mdoc-font-actions .btn {
+  padding: 6px 10px;
+}
+
+
+/* autorise sélection du texte pendant l’édition */
+.anno-text[contenteditable="true"]{
+  user-select: text;
+  cursor: text !important;
+}
+
+/* évite le “focus outline” moche de certains navigateurs */
+.anno-text[contenteditable="true"]:focus{
+  outline: 2px solid rgba(37,99,235,0.45);
+}
+
+
+/* ===== Font Dropdown (Option A) ===== */
+.zh-font-dd {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.zh-font-dd-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.zh-font-dd-btn .zh-font-dd-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.zh-font-dd-btn .zh-font-dd-caret {
+  opacity: 0.7;
+}
+
+.zh-font-dd-menu {
+  position: absolute;
+  z-index: 9999;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;              /* ✅ important */
+  overflow-x: hidden;
+  overscroll-behavior: contain;  /* ✅ empêche le scroll de “déborder” sur le parent */
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(17,24,39,.14);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  padding: 6px;
+  display: none;
+}
+
+
+.zh-font-dd.open .zh-font-dd-menu {
+  display: block;
+}
+
+.zh-font-dd-search {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.zh-font-dd-search input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 10px;
+  outline: none;
+}
+
+.zh-font-dd-list {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.zh-font-dd-group {
+  padding: 0.35rem 0.65rem;
+  font-size: 12px;
+  opacity: 0.7;
+  background: rgba(0,0,0,0.03);
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.zh-font-dd-item {
+  padding: 0.55rem 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.zh-font-dd-item:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+.zh-font-dd-item .zh-font-dd-sample {
+  opacity: 0.9;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zh-font-dd-item .zh-font-dd-name {
+  font-size: 12px;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+.zh-font-dd-item.is-active {
+  background: rgba(0,0,0,0.06);
+}
+
+
+/* app/static/labo/editor/marketing_document_editor.css */
+
+.editor-panel {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 12px;
+  background: #fff;
+}
+
+.editor-panel__title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.editor-row--2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+}
+
+.editor-label {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+
+.editor-hint {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+/* ===============================
+   FULL WIDTH PDF AREA (override)
+   =============================== */
+
+/* Le layout prend la hauteur dispo pour que la zone PDF puisse s'étirer */
+.mdoc-layout{
+  min-height: calc(100vh - 120px); /* ajuste si ton header est plus grand */
+}
+
+/* La zone droite utilise toute la largeur dispo */
+.mdoc-main{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Le container PDF prend tout l'espace et gère le scroll */
+.mdoc-pdf{
+  max-height: none !important;
+  height: calc(100vh - 160px);   /* garde ton comportement actuel mais en height */
+  overflow: auto;
+}
+
+/* IMPORTANT : ne plus centrer les pages, elles se collent à gauche */
+.pdf-page-wrap{
+  margin: 0 0 16px 0 !important;   /* au lieu de 0 auto */
+  display: inline-block;           /* garde la taille exacte de la page */
+}
+
+/* Optionnel : si tu veux que la page soit "alignée" sans vide */
+.mdoc-pdf{
+  text-align: left;
+}
+.anno-object.is-multi-selected {
+  outline: 2px solid #2563eb; /* bleu */
+  outline-offset: 2px;
+}
+
+.anno-object.is-multi-anchor {
+  outline-width: 3px;
+}
+
+/* =========================
+   LAYER SWITCH (Front/Back)
+   ========================= */
+
+.mdoc-layer-switch {
+  margin-top: 10px;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layer-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #d1d5db;
+  transition: 0.2s;
+  border-radius: 999px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+/* ON = premier plan */
+.switch input:checked + .slider {
+  background-color: #84cc16;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+/* =====================================================
+   Switch "Plan" : toujours vert (left/right)
+   ===================================================== */
+
+.mdoc-layer-switch .switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.mdoc-layer-switch .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Track = toujours vert */
+.mdoc-layer-switch .switch .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #22c55e;            /* vert */
+  transition: 0.18s;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+/* Thumb */
+.mdoc-layer-switch .switch .slider:before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  transition: 0.18s;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+/* Checked = thumb à droite */
+.mdoc-layer-switch .switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* Unchecked = thumb à gauche (track reste vert) */
+.mdoc-layer-switch .switch input:not(:checked) + .slider:before {
+  transform: translateX(0);
+}
+
+
+/* IMPORTANT: sinon l'image capte le clic et tu ne prends pas la poignée */
+.anno-object.anno-image img {
+  pointer-events: none;
+}
+
+/* =========================================================
+   Sidebar polish (Outils + Accordéons)
+   Colle en bas de marketing_document_editor.css
+   ========================================================= */
+
+/* --- Sidebar background + spacing --- */
+.mdoc-sidebar {
+  background: #f6f7fb;
+}
+
+.mdoc-sidebar-inner {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- Panels look (cards) --- */
+.mdoc-panel {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  padding: 12px;
+}
+
+.mdoc-panel-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+/* --- Outils buttons : uniform + modern --- */
+.mdoc-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.mdoc-actions .btn {
+  width: 100%;
+  border-radius: 12px !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 800;
+  box-shadow: none !important;
+  transition: transform .08s ease, background .12s ease, border-color .12s ease;
+}
+
+.mdoc-actions .btn:hover {
+  background: #e8eef7 !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.mdoc-actions .btn:active {
+  transform: translateY(0px);
+}
+
+/* Active state (set via JS: .is-active) */
+.mdoc-actions .btn.is-active,
+.mdoc-actions .btn.active {
+  background: rgba(37, 99, 235, 0.12) !important;
+  border-color: rgba(37, 99, 235, 0.55) !important;
+  color: #1d4ed8 !important;
+}
+
+/* --- Accordion header buttons (Grille / Bloc produit) --- */
+.mdoc-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+
+  font-weight: 900;
+  color: #0f172a;
+  cursor: pointer;
+
+  transition: background .12s ease, border-color .12s ease, transform .08s ease;
+}
+
+.mdoc-toggle-btn:hover {
+  background: #f8fafc;
+  border-color: rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.mdoc-toggle-btn:active {
+  transform: translateY(0px);
+}
+
+.mdoc-toggle-btn .caret {
+  font-size: 14px;
+  opacity: 0.75;
+  transition: transform .15s ease;
+}
+
+/* Accordion active */
+.mdoc-toggle-btn.is-active {
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.50);
+  color: #1d4ed8;
+}
+
+.mdoc-toggle-btn.is-active .caret {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
+/* --- Collapsible panels: hidden = truly hidden --- */
+.mdoc-panel-collapsible {
+  display: none;
+  padding: 12px;
+}
+
+.mdoc-panel-collapsible.is-open {
+  display: block;
+  animation: mdocFadeIn .12s ease-out;
+}
+
+@keyframes mdocFadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0px); }
+}
+
+/* Make the opened collapsible look “attached” to its header */
+.mdoc-panel-collapsible.is-open {
+  margin-top: -6px;              /* “coller” au header */
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* --- Inputs nicer inside sidebar --- */
+.mdoc-sidebar .mdoc-input,
+.mdoc-sidebar select.mdoc-input,
+.mdoc-sidebar input.mdoc-input {
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.mdoc-sidebar .mdoc-input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Small separators inside panels */
+.mdoc-sep {
+  border: none;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  margin: 10px 0;
+}
+
+/* --- Hints --- */
+.mdoc-hint {
+  color: rgba(15, 23, 42, 0.65);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+/* --- Optional: reduce “big padding” on full buttons in toolboxes --- */
+.btn.mdoc-full {
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* bouton actif */
+.mdoc-toggle-tool.is-active {
+  border-color: rgba(37, 99, 235, 0.55);
+  background: rgba(37, 99, 235, 0.12);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* caret */
+.mdoc-caret {
+  float: right;
+  opacity: 0.7;
+  font-weight: 700;
+}
+.mdoc-toggle-tool.is-active .mdoc-caret {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+
+/* =========================================================
+   UI BOOST — Sidebar / Buttons / Panels (ZenHub PDF Editor)
+   Colle ce bloc en bas de marketing_document_editor.css
+   ========================================================= */
+
+/* --- Variables couleurs (facile à ajuster) --- */
+:root {
+  --mdoc-accent: #2563eb;        /* bleu */
+  --mdoc-accent-dark: #1d4ed8;
+  --mdoc-bg: #f6f7fb;
+  --mdoc-card: #ffffff;
+  --mdoc-border: #e5e7eb;
+  --mdoc-text: #0f172a;
+  --mdoc-muted: #64748b;
+  --mdoc-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --mdoc-shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.08);
+  --mdoc-radius: 14px;
+}
+
+/* --- Sidebar fond + layout --- */
+.mdoc-sidebar {
+  background: var(--mdoc-bg);
+  border-right: 1px solid var(--mdoc-border);
+}
+
+.mdoc-sidebar-inner {
+  padding: 14px 12px !important;
+}
+
+/* --- Panels comme des cartes --- */
+.mdoc-panel {
+  background: var(--mdoc-card);
+  border: 1px solid var(--mdoc-border);
+  border-radius: var(--mdoc-radius);
+  box-shadow: var(--mdoc-shadow-soft);
+  padding: 12px 12px;
+  margin-bottom: 12px;
+}
+
+.mdoc-panel-title {
+  color: var(--mdoc-text);
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Séparateur plus propre */
+.mdoc-sep {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--mdoc-border), transparent);
+  margin: 12px 0;
+}
+
+/* --- Zone boutons outils : spacing et grille --- */
+.mdoc-actions {
+  display: grid;
+  gap: 10px;
+}
+
+/* --- Base boutons : plus "action", moins "fade" --- */
+.mdoc-actions .btn {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #dbe2ef;
+  background: linear-gradient(180deg, #ffffff, #f3f6ff);
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: .2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 2px 0 rgba(15, 23, 42, 0.06);
+  transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.mdoc-actions .btn:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.mdoc-actions .btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 0 rgba(15, 23, 42, 0.06);
+}
+
+/* Focus accessible + joli */
+.mdoc-actions .btn:focus,
+.mdoc-actions .btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18), 0 10px 18px rgba(37, 99, 235, 0.10);
+  border-color: #93c5fd;
+}
+
+/* --- Etat actif (ton JS met .is-active) --- */
+.mdoc-actions .btn.is-active {
+  background: linear-gradient(180deg, var(--mdoc-accent), var(--mdoc-accent-dark));
+  border-color: rgba(37, 99, 235, 0.55);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Petit “liseré” à gauche sur actif */
+.mdoc-actions .btn.is-active::before {
+  content: "";
+  width: 6px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+  position: absolute;
+  left: 10px;
+}
+
+/* Pour permettre ::before sans casser la mise en page */
+.mdoc-actions .btn {
+  position: relative;
+}
+
+/* --- Bouton "Grille" style accordéon (caret) --- */
+.mdoc-actions .mdoc-caret {
+  margin-left: auto;
+  opacity: 0.7;
+  font-weight: 900;
+  transition: transform .14s ease, opacity .14s ease;
+}
+
+.mdoc-actions .btn.is-active .mdoc-caret {
+  opacity: 1;
+  transform: rotate(90deg);
+}
+
+/* --- Inputs plus modernes --- */
+.mdoc-input,
+.form-control {
+  border-radius: 12px !important;
+  border: 1px solid #dbe2ef !important;
+  background: #ffffff !important;
+  height: 40px;
+  padding: 8px 10px !important;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.mdoc-input:focus,
+.form-control:focus {
+  outline: none !important;
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Labels + hints plus lisibles */
+.mdoc-label {
+  color: var(--mdoc-text);
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.mdoc-hint,
+.mdoc-tip,
+.mdoc-muted {
+  color: var(--mdoc-muted) !important;
+  font-size: 12px;
+}
+
+/* Checkbox alignement */
+.mdoc-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2ff;
+}
+
+.mdoc-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Petit boost sur les boutons bas (enregistrer/publier etc.) --- */
+.mdoc-panel .btn.btn-primary,
+.mdoc-header .btn.btn-primary {
+  border-radius: 12px;
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+}
+
+.mdoc-panel .btn.btn-secondary,
+.mdoc-header .btn.btn-secondary {
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* --- Responsive : sidebar un peu plus compacte --- */
+@media (max-width: 1100px) {
+  .mdoc-actions .btn { height: 40px; font-size: 13px; }
+  .mdoc-panel { padding: 10px; border-radius: 12px; }
+}
+
+/* =========================================================
+   FINAL UI OVERRIDE (unique) — Boutons + Panels + Sidebar
+   A COLLER TOUT EN BAS DU FICHIER
+   ========================================================= */
+
+:root{
+  --mdoc-accent: #2563eb;
+  --mdoc-accent-dark: #1d4ed8;
+  --mdoc-bg: #f6f7fb;
+  --mdoc-card: #ffffff;
+  --mdoc-border-strong: rgba(15,23,42,0.12);
+  --mdoc-border-soft: rgba(15,23,42,0.08);
+  --mdoc-text: #0f172a;
+  --mdoc-muted: #64748b;
+  --mdoc-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --mdoc-shadow-btn: 0 6px 16px rgba(37, 99, 235, 0.18);
+  --mdoc-radius: 14px;
+}
+
+/* Sidebar fond + séparation */
+.mdoc-sidebar{
+  background: var(--mdoc-bg) !important;
+  border-right: 1px solid var(--mdoc-border-soft) !important;
+}
+
+/* Padding sidebar */
+.mdoc-sidebar-inner{
+  padding: 12px !important;
+  gap: 12px !important;
+}
+
+/* Panels plus clean */
+.mdoc-panel{
+  background: var(--mdoc-card) !important;
+  border: 1px solid var(--mdoc-border-soft) !important;
+  border-radius: var(--mdoc-radius) !important;
+  box-shadow: var(--mdoc-shadow-soft) !important;
+}
+
+/* Titres panels */
+.mdoc-panel-title{
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  color: var(--mdoc-text) !important;
+  margin-bottom: 10px !important;
+}
+
+/* Séparateurs plus doux */
+.mdoc-sep{
+  border: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(to right, transparent, rgba(15,23,42,0.12), transparent) !important;
+  margin: 12px 0 !important;
+}
+
+/* Zone outils : boutons en grille + spacing */
+.mdoc-actions{
+  display: grid !important;
+  gap: 10px !important;
+}
+
+/* Boutons outils (CTA) */
+.mdoc-actions .btn{
+  height: 44px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(37, 99, 235, 0.18) !important;
+  background: linear-gradient(180deg, #ffffff, #f3f7ff) !important;
+  color: var(--mdoc-text) !important;
+  font-weight: 900 !important;
+  letter-spacing: .15px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-shadow: 0 2px 0 rgba(15,23,42,0.06) !important;
+  transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease !important;
+  position: relative !important;
+}
+
+.mdoc-actions .btn:hover{
+  transform: translateY(-1px) !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  box-shadow: 0 10px 18px rgba(37,99,235,0.12) !important;
+}
+
+.mdoc-actions .btn:active{
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 0 rgba(15,23,42,0.06) !important;
+}
+
+.mdoc-actions .btn:focus,
+.mdoc-actions .btn:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.18), 0 10px 18px rgba(37,99,235,0.10) !important;
+  border-color: rgba(37,99,235,0.55) !important;
+}
+
+/* Actif (ton JS met .is-active) */
+.mdoc-actions .btn.is-active{
+  background: linear-gradient(180deg, var(--mdoc-accent), var(--mdoc-accent-dark)) !important;
+  border-color: rgba(37,99,235,0.60) !important;
+  color: #fff !important;
+  box-shadow: var(--mdoc-shadow-btn) !important;
+}
+
+/* Liseré gauche sur actif */
+.mdoc-actions .btn.is-active::before{
+  content:"";
+  position:absolute;
+  left: 10px;
+  width: 6px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+}
+
+/* Caret (Grille) */
+.mdoc-caret{
+  margin-left: auto !important;
+  opacity: 0.85 !important;
+  font-weight: 900 !important;
+  transition: transform .14s ease, opacity .14s ease !important;
+}
+
+.mdoc-actions .btn.is-active .mdoc-caret{
+  transform: rotate(90deg) !important;
+  opacity: 1 !important;
+}
+
+/* Inputs plus premium */
+.mdoc-input,
+.form-control{
+  border-radius: 12px !important;
+  border: 1px solid rgba(15,23,42,0.14) !important;
+  background: #fff !important;
+  height: 40px !important;
+  padding: 8px 10px !important;
+}
+
+.mdoc-input:focus,
+.form-control:focus{
+  border-color: rgba(37,99,235,0.55) !important;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.14) !important;
+  outline: none !important;
+}
+
+/* Checkboxes plus jolis */
+.mdoc-check{
+  padding: 8px 10px !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(37,99,235,0.10) !important;
+}
+
+/* Mobile */
+@media (max-width: 1100px){
+  .mdoc-actions .btn{ height: 42px !important; font-size: 13px !important; }
+}
+
+
+.mdoc-collapsible {
+  border: 1px solid var(--mdoc-border);
+  border-radius: 12px;
+  background: var(--mdoc-card);
+  overflow: hidden;
+}
+
+.mdoc-collapsible-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.mdoc-collapsible-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.mdoc-collapsible-icon {
+  transition: transform 0.15s ease;
+  opacity: 0.8;
+}
+
+.mdoc-collapsible[data-collapsed="1"] .mdoc-collapsible-body {
+  display: none;
+}
+
+.mdoc-collapsible[data-collapsed="1"] .mdoc-collapsible-icon {
+  transform: rotate(-90deg);
+}
+/* ============================
+   FIX: sidebar scroll (force)
+   ============================ */
+
+.mdoc-sidebar{
+  /* le sticky doit avoir une "boîte" scrollable */
+  height: calc(100vh - 28px) !important; /* top 14 + marge */
+  overflow: hidden !important;          /* le scroll se fait dans inner */
+}
+
+.mdoc-sidebar-inner{
+  height: 100% !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 6px !important;
+}
+
+/* optionnel: scrollbar un peu plus propre */
+.mdoc-sidebar-inner::-webkit-scrollbar { width: 10px; }
+.mdoc-sidebar-inner::-webkit-scrollbar-thumb {
+  background: rgba(15,23,42,0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+#toolSection[data-collapsed="1"] #toolSectionBody { display:none; }
+#toolSection[data-collapsed="0"] #toolSectionBody { display:block; }
+
+/* ✅ colonne gauche : doit pouvoir scroller */
+.mdoc-left,
+.mdoc-sidebar,
+#leftSidebar {
+  height: calc(100vh - 16px); /* ajuste si tu as un header */
+  overflow: hidden;          /* le scroll sera sur l’intérieur */
+}
+
+.mdoc-left-inner,
+.mdoc-sidebar-inner,
+#leftSidebarInner {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 24px; /* pour atteindre les derniers boutons */
+  -webkit-overflow-scrolling: touch;
+}

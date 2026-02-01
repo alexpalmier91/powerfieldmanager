@@ -1,0 +1,94 @@
+{# app/templates/superuser/display_product_new.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Nouveau Display Product{% endblock %}
+{% block breadcrumb %}Superuser / Display Products / Nouveau{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>Nouveau Display Product</h1>
+
+    <form id="displayProductForm" style="margin-top:16px; max-width:480px;">
+      <div class="form-group">
+        <label for="owner_client_id">Owner</label>
+        <select id="owner_client_id" name="owner_client_id" class="input" required>
+          <option value="">Sélectionner un owner</option>
+          {% for owner in owners %}
+            <option value="{{ owner.id }}">{{ owner.name }} (id {{ owner.id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="sku">SKU</label>
+        <input type="text" id="sku" name="sku" class="input" required>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="name">Nom du produit</label>
+        <input type="text" id="name" name="name" class="input" required>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="description">Description (optionnel)</label>
+        <textarea id="description" name="description" class="input" rows="4"></textarea>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">Créer</button>
+        <a href="/superuser/display-products" class="btn btn-secondary">Annuler</a>
+      </div>
+
+      <p id="formError" style="margin-top:12px; color:#b91c1c; display:none;"></p>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE = "/api-zenhub";
+    const TOKEN = localStorage.getItem("token");
+
+    document.getElementById("displayProductForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("formError");
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+
+      const ownerId = document.getElementById("owner_client_id").value;
+      const payload = {
+        owner_client_id: ownerId ? parseInt(ownerId, 10) : null,
+        sku: document.getElementById("sku").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        description: document.getElementById("description").value.trim() || null,
+      };
+
+      if (!payload.owner_client_id) {
+        errorEl.textContent = "Merci de sélectionner un owner.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/superuser/display-products`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || "Erreur lors de la création du Display Product");
+        }
+
+        const created = await res.json();
+        window.location.href = `/superuser/display-products/${created.id}`;
+      } catch (err) {
+        errorEl.textContent = err.message || "Erreur inconnue";
+        errorEl.style.display = "block";
+      }
+    });
+  </script>
+{% endblock %}

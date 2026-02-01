@@ -1,0 +1,255 @@
+{# app/templates/labo/dashboard.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}{{ _("labo.dashboard.title") }}{% endblock %}
+{% block breadcrumb %}{{ _("labo.dashboard.breadcrumb") }}{% endblock %}
+
+{% block content %}
+  <!-- Carte de bienvenue -->
+  <div class="card" style="margin-bottom:16px;">
+    <h2 style="margin:0 0 8px;">
+      {{ _("labo.dashboard.welcome_title") if _("labo.dashboard.welcome_title") != "labo.dashboard.welcome_title" else "Bienvenue sur votre dashboard Labo" }}
+    </h2>
+    <p style="margin:0; color:#6b7280">
+      {{ _("labo.dashboard.welcome_desc") if _("labo.dashboard.welcome_desc") != "labo.dashboard.welcome_desc" else "Suivez vos performances, vos clients et vos stocks en un coup d'œil." }}
+    </p>
+  </div>
+
+  <!-- Layout 2 colonnes : gauche = KPI / droite = Graphs -->
+  <div class="card" style="margin-top:8px;">
+    <div style="display:flex; flex-wrap:wrap; gap:16px;">
+
+      {# ===================== COLONNE GAUCHE ===================== #}
+      <div style="flex:1 1 260px; max-width:420px; display:flex; flex-direction:column; gap:12px;">
+
+        <h3 style="margin:0 0 8px;">
+          {{ _("labo.dashboard.kpis_title") if _("labo.dashboard.kpis_title") != "labo.dashboard.kpis_title" else "Indicateurs" }}
+        </h3>
+
+        <!-- KPI : CA mois en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              CA mois en cours
+            </div>
+            <div id="kpi-ca-month" style="font-weight:700; font-size:18px; color:#2563eb;">—</div>
+          </div>
+          <div style="font-size:24px;">📆</div>
+        </div>
+
+        <!-- KPI : CA année en cours -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              CA année en cours
+            </div>
+            <div id="kpi-ca-year" style="font-weight:700; font-size:18px; color:#16a34a;">—</div>
+          </div>
+          <div style="font-size:24px;">📈</div>
+        </div>
+
+        <!-- KPI : Commandes agents du jour -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              Commandes agents du jour
+            </div>
+            <div id="kpi-orders-today" style="font-weight:700; font-size:18px;">—</div>
+          </div>
+          <div style="font-size:24px;">🧾</div>
+        </div>
+
+        <!-- KPI : Clients actifs (12 mois) -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              Clients actifs (12 mois)
+            </div>
+            <div id="kpi-active-clients" style="font-weight:700; font-size:18px;">—</div>
+          </div>
+          <div style="font-size:24px;">👥</div>
+        </div>
+
+        <!-- KPI : Agents actifs (12 mois) -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#f3f4f6;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+              Agents actifs (12 mois)
+            </div>
+            <div id="kpi-active-agents" style="font-weight:700; font-size:18px;">—</div>
+          </div>
+          <div style="font-size:24px;">🧑‍💼</div>
+        </div>
+
+        <!-- KPI : Produits en rupture -->
+        <div class="kpi-card" style="
+          border-radius:8px;
+          padding:10px 12px;
+          background:#fef2f2;
+          border:1px solid #fecaca;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        ">
+          <div>
+            <div style="font-size:12px; text-transform:uppercase; color:#b91c1c;">
+              Produits en rupture
+            </div>
+            <div id="kpi-out-of-stock" style="font-weight:700; font-size:18px; color:#b91c1c;">—</div>
+          </div>
+          <div style="font-size:24px;">⚠️</div>
+        </div>
+
+      </div>
+
+      {# ===================== COLONNE DROITE ===================== #}
+      <div style="flex:3 1 360px; min-width:320px; display:flex; flex-direction:column; gap:12px;">
+
+        {# Graphique CA HT par jour – mois en cours #}
+        <div style="
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+          padding:10px 12px;
+          display:flex;
+          flex-direction:column;
+        ">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+                CA HT par jour – mois en cours
+              </div>
+              <div style="font-size:12px; color:#9ca3af;">
+                Histogramme des ventes journalières (factures)
+              </div>
+            </div>
+            <div id="daily-period-label" style="font-size:12px; color:#9ca3af;">
+              Mois en cours
+            </div>
+          </div>
+
+          <div style="position:relative; flex:1 1 auto; min-height:220px; max-height:360px;">
+            <canvas id="chart-daily"></canvas>
+            <div id="daily-loader"
+                 style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:13px; color:#9ca3af;">
+              Chargement...
+            </div>
+            <div id="daily-empty"
+                 style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:13px; color:#9ca3af;">
+              Aucune vente sur le mois en cours.
+            </div>
+          </div>
+        </div>
+
+        {# Graphique CA HT par mois – 12 derniers mois #}
+        <div style="
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+          padding:10px 12px;
+          display:flex;
+          flex-direction:column;
+        ">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <div style="font-size:12px; text-transform:uppercase; color:#6b7280;">
+                CA HT par mois – 12 derniers mois
+              </div>
+              <div style="font-size:12px; color:#9ca3af;">
+                Vue globale de l'activité
+              </div>
+            </div>
+            <div id="monthly-period-label" style="font-size:12px; color:#9ca3af;">
+              12 derniers mois
+            </div>
+          </div>
+
+          <div style="position:relative; flex:1 1 auto; min-height:220px; max-height:360px;">
+            <canvas id="chart-monthly"></canvas>
+            <div id="monthly-loader"
+                 style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:13px; color:#9ca3af;">
+              Chargement...
+            </div>
+            <div id="monthly-empty"
+                 style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:13px; color:#9ca3af;">
+              Aucune vente sur la période.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ========= Carte impersonation : retour Superuser ========= #}
+  <div class="card" style="margin-top:16px; border-left:4px solid #f97316">
+    <h3>{{ _("labo.dashboard.impersonation_title") }}</h3>
+
+    <p style="color:#6b7280">
+      {{ _("labo.dashboard.impersonation_desc") }}
+    </p>
+
+    <button id="btn-exit-imp"
+            style="margin-top:8px;padding:6px 10px;border-radius:8px;border:0;background:#111827;color:#fff;cursor:pointer">
+      {{ _("labo.dashboard.exit_impersonation") }}
+    </button>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/labo/labo_dashboard.js"></script>
+
+  {# JS impersonation, repris de ton ancien dashboard #}
+  <script type="module">
+    const exitBtn = document.getElementById("btn-exit-imp");
+
+    exitBtn?.addEventListener("click", () => {
+      const backup = sessionStorage.getItem("jwt_superuser_backup");
+      if (backup) {
+        localStorage.setItem("zentro_token", backup);
+        localStorage.setItem("token", backup);
+        localStorage.setItem("jwt", backup);
+        sessionStorage.removeItem("jwt_superuser_backup");
+      } else {
+        localStorage.removeItem("zentro_token");
+        localStorage.removeItem("token");
+        localStorage.removeItem("jwt");
+      }
+      window.location.href = "/superuser/dashboard";
+    });
+  </script>
+{% endblock %}

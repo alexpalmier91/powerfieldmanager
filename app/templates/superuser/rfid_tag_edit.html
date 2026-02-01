@@ -1,0 +1,225 @@
+{# app/templates/superuser/rfid_tag_edit.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Tag RFID {{ tag.id }}{% endblock %}
+{% block breadcrumb %}Tags RFID / {{ tag.id }}{% endblock %}
+
+{% block content %}
+  <h1>Tag RFID #{{ tag.id }}</h1>
+
+  <div class="card" style="margin-top:16px;">
+    <p><strong>EPC</strong> :
+      <code style="font-size:0.95rem;">{{ tag.epc }}</code>
+    </p>
+    <p><strong>Statut actuel</strong> : {{ tag.status.value }}</p>
+    <p><strong>Dernière vue</strong> : {{ tag.last_seen_at or "-" }}</p>
+    <p><strong>Produit lié</strong> :
+      {% if product %}
+        [{{ product.id }}] {{ product.sku }} — {{ product.name }}
+      {% elif tag.product_id %}
+        ID produit : {{ tag.product_id }} (non trouvé)
+      {% else %}
+        Aucun
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Mettre à jour le tag</h3>
+
+    <form id="rfid-tag-form" onsubmit="return false;">
+      <div style="margin-bottom:8px;">
+        <label>SKU (facultatif)</label><br>
+        <input type="text"
+               id="field-sku"
+               value="{{ tag.sku or '' }}"
+               style="min-width:260px; padding:4px 8px;">
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label>ID produit (facultatif)</label><br>
+        <input type="number"
+               id="field-product-id"
+               value="{{ product.id if product else '' }}"
+               style="min-width:160px; padding:4px 8px;">
+      </div>
+
+      <div style="margin-bottom:8px; position:relative; max-width:420px;">
+        <label>Recherche produit (SKU / nom)</label><br>
+        <input type="text"
+               id="field-product-search"
+               placeholder="Tape un SKU ou un nom produit"
+               style="width:100%; padding:4px 8px;">
+
+        <div id="product-search-results"
+             style="position:absolute; z-index:20; top:100%; left:0; right:0;
+                    background:#fff; border:1px solid #e5e7eb;
+                    border-radius:4px; max-height:220px; overflow:auto; display:none;">
+          {# rempli en JS #}
+        </div>
+
+        <p style="color:#6b7280; font-size:0.8rem; margin-top:4px;">
+          Clique sur un produit dans la liste pour remplir l’ID produit + SKU.
+        </p>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label>Statut</label><br>
+        <select id="field-status" style="padding:4px 8px;">
+          {% for s in all_status %}
+            <option value="{{ s.value }}" {{ "selected" if s == tag.status }}>
+              {{ s.value }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="button"
+              class="btn btn-primary"
+              onclick="saveTag()">
+        Enregistrer
+      </button>
+      <span id="save-status"
+            style="margin-left:8px; color:#16a34a; display:none;">
+        Sauvegardé ✔
+      </span>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const tagId = {{ tag.id }};
+      const TOKEN = localStorage.getItem("token");
+
+      // --------------- SAVE TAG -----------------
+      window.saveTag = async function () {
+        const sku = document.getElementById("field-sku").value || null;
+        const productIdRaw = document.getElementById("field-product-id").value;
+        const status = document.getElementById("field-status").value;
+        const product_id = productIdRaw ? Number(productIdRaw) : null;
+
+        const body = { sku, product_id, status };
+
+        const headers = {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        };
+        if (TOKEN) {
+          headers["Authorization"] = "Bearer " + TOKEN;
+        }
+
+        try {
+          const res = await fetch(
+            `/api-zenhub/superuser/rfid-tags/${tagId}`,
+            {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify(body),
+            }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            alert("Erreur lors de la sauvegarde (" + res.status + ")\\n" + txt);
+            return;
+          }
+          const data = await res.json();
+          console.log("saved", data);
+
+          const s = document.getElementById("save-status");
+          if (s) {
+            s.style.display = "inline";
+            setTimeout(() => { s.style.display = "none"; }, 2000);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("Erreur réseau lors de la sauvegarde");
+        }
+      };
+
+      // --------------- AUTOCOMPLETE PRODUIT -----------------
+      const inputSearch = document.getElementById("field-product-search");
+      const resultsBox = document.getElementById("product-search-results");
+
+      let searchTimeout = null;
+
+      function clearResults() {
+        if (resultsBox) {
+          resultsBox.innerHTML = "";
+          resultsBox.style.display = "none";
+        }
+      }
+
+      async function doSearch(query) {
+        if (!query || query.length < 2) {
+          clearResults();
+          return;
+        }
+
+        const headers = { "Accept": "application/json" };
+        if (TOKEN) {
+          headers["Authorization"] = "Bearer " + TOKEN;
+        }
+
+        try {
+          const res = await fetch(
+            `/api-zenhub/superuser/products/search?q=` + encodeURIComponent(query),
+            { headers }
+          );
+          if (!res.ok) {
+            clearResults();
+            return;
+          }
+          const data = await res.json();
+          if (!Array.isArray(data) || data.length === 0) {
+            clearResults();
+            return;
+          }
+
+          resultsBox.innerHTML = "";
+          data.forEach((p) => {
+            const div = document.createElement("div");
+            div.style.padding = "4px 8px";
+            div.style.cursor = "pointer";
+            div.style.fontSize = "0.9rem";
+            div.textContent = `[${p.id}] ${p.sku} — ${p.name}`;
+            div.addEventListener("click", () => {
+              const fieldId = document.getElementById("field-product-id");
+              const fieldSku = document.getElementById("field-sku");
+              if (fieldId) fieldId.value = p.id;
+              if (fieldSku && !fieldSku.value) fieldSku.value = p.sku;
+              clearResults();
+            });
+            div.addEventListener("mouseenter", () => {
+              div.style.background = "#f3f4f6";
+            });
+            div.addEventListener("mouseleave", () => {
+              div.style.background = "#ffffff";
+            });
+            resultsBox.appendChild(div);
+          });
+          resultsBox.style.display = "block";
+        } catch (e) {
+          console.error(e);
+          clearResults();
+        }
+      }
+
+      if (inputSearch) {
+        inputSearch.addEventListener("input", (e) => {
+          const q = e.target.value;
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+          }
+          searchTimeout = setTimeout(() => doSearch(q), 250);
+        });
+
+        // cacher la liste si on clique ailleurs
+        document.addEventListener("click", (e) => {
+          if (!resultsBox.contains(e.target) && e.target !== inputSearch) {
+            clearResults();
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

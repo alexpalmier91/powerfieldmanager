@@ -1,0 +1,108 @@
+services:
+  api:
+    build: .
+    container_name: zentro-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+    volumes:
+      - .:/app
+      - static_vendor:/app/app/static/vendor
+      - ./data/uploads:/data/uploads
+
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - PYTHONUNBUFFERED=1
+      - GOOGLE_SERVICE_ACCOUNT_FILE=/app/app/secrets/moxie-273609-bf3e56f89bf4.json
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket,sys;s=socket.socket();s.settimeout(2);s.connect(('127.0.0.1',8000));s.close();sys.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    build: .
+    container_name: zentro-worker
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app.celery worker --loglevel=INFO
+
+    volumes:
+      - .:/app
+      - static_vendor:/app/app/static/vendor
+      - ./data/uploads:/data/uploads
+
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - PYTHONUNBUFFERED=1
+
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.tasks.celery_app.celery inspect ping | grep -q 'OK'"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  redis:
+    image: redis:7-alpine
+    container_name: zentro-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  db:
+    image: postgres:15
+    container_name: zentro-db
+    restart: always
+    environment:
+      - POSTGRES_DB=zentro
+      - POSTGRES_USER=zentro
+      - POSTGRES_PASSWORD=zentro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zentro -d zentro"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata:
+  redisdata:
+  static_vendor:

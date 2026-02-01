@@ -1,0 +1,59 @@
+{# app/templates/agent/marketing_documents.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Documents labo{% endblock %}
+{% block breadcrumb %}Documents labo{% endblock %}
+
+{% block content %}
+  <h1>Documents labo</h1>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div style="min-width:280px;">
+        <h2 style="margin-bottom:8px;">Sélection du labo</h2>
+
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <select id="agentMarketingDocsLaboSelect" disabled style="min-width:220px;">
+            <option value="">Chargement…</option>
+          </select>
+
+          <span style="color:#6b7280;" id="agentMarketingDocsStatus"></span>
+        </div>
+      </div>
+
+      <div style="color:#6b7280; font-size:13px; line-height:1.4; max-width:620px;">
+        💡 <strong>Lire</strong> ouvre le viewer dans le dashboard (prix/ruptures dynamiques).
+        <strong>Télécharger PDF final</strong> génère un PDF <strong>vectoriel</strong> (typos embarquées) prêt à envoyer.
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <h2 style="margin:0;">Documents disponibles</h2>
+      <span style="color:#6b7280; font-size:13px;">Aperçu + viewer + PDF final</span>
+    </div>
+
+    <div style="overflow:auto; margin-top:12px;">
+      <table class="table" style="width:100%; min-width:1160px;">
+        <thead>
+          <tr>
+            <th style="width:120px;">Aperçu</th>
+            <th>Nom</th>
+            <th style="width:160px;">Type</th>
+            <th>Commentaire</th>
+            <th style="width:180px;">Date</th>
+            <th style="width:160px;">Publication</th>
+            <th style="width:240px;">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="agentMarketingDocsTbody" data-view-base="/agent/marketing-documents">
+          <tr><td colspan="7" style="color:#6b7280;">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/static/agent/marketing_documents.js?v=9"></script>
+{% endblock %}

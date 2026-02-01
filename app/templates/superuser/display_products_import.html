@@ -1,0 +1,114 @@
+{# app/templates/superuser/display_products_import.html #}
+{% extends "_layouts/app.html" %}
+
+{% block title %}Import Display Products{% endblock %}
+{% block breadcrumb %}Superuser / Display Products / Import Excel{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>Import Display Products (Excel)</h1>
+
+    <p style="color:#6b7280; margin-top:4px;">
+      Le fichier Excel doit être au format <strong>.xlsx</strong> et contenir <strong>une ligne d'en-têtes</strong>,
+      puis une ligne par produit.<br>
+      <br>
+      <strong>En-têtes attendues (dans cet ordre) :</strong>
+    </p>
+
+    <ul style="color:#6b7280; margin-top:0;">
+      <li><code>SKU</code> — Référence du produit (obligatoire)</li>
+      <li><code>Nom du produit</code> — Nom lisible du produit (obligatoire, ou sera remplacé par le SKU)</li>
+      <li><code>EAN</code> — Code barre EAN13 (optionnel)</li>
+    </ul>
+
+    <p style="color:#6b7280;">
+      Exemple de première ligne dans Excel :
+      <br>
+      <code>SKU | Nom du produit | EAN</code>
+    </p>
+
+    <form id="importForm" style="margin-top:16px; max-width:480px;">
+      <div class="form-group">
+        <label for="owner_client_id">Owner</label>
+        <select id="owner_client_id" name="owner_client_id" class="input" required>
+          <option value="">Sélectionner un owner</option>
+          {% for owner in owners %}
+            <option value="{{ owner.id }}">{{ owner.name }} (id {{ owner.id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="file">Fichier Excel (.xlsx)</label>
+        <input type="file" id="file" name="file" class="input" accept=".xlsx" required>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">Importer</button>
+        <a href="/superuser/display-products" class="btn btn-secondary">Retour à la liste</a>
+      </div>
+
+      <p id="importInfo" style="margin-top:12px; color:#16a34a; display:none;"></p>
+      <p id="importError" style="margin-top:12px; color:#b91c1c; display:none;"></p>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE = "/api-zenhub";
+    const TOKEN = localStorage.getItem("token");
+
+    const form = document.getElementById("importForm");
+    const infoEl = document.getElementById("importInfo");
+    const errorEl = document.getElementById("importError");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      infoEl.style.display = "none";
+      errorEl.style.display = "none";
+      infoEl.textContent = "";
+      errorEl.textContent = "";
+
+      const ownerId = document.getElementById("owner_client_id").value;
+      const fileInput = document.getElementById("file");
+      const file = fileInput.files[0];
+
+      if (!ownerId) {
+        errorEl.textContent = "Merci de sélectionner un owner.";
+        errorEl.style.display = "block";
+        return;
+      }
+      if (!file) {
+        errorEl.textContent = "Merci de choisir un fichier Excel (.xlsx).";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("owner_client_id", ownerId);
+      fd.append("file", file);
+
+      try {
+        const res = await fetch(`${API_BASE}/superuser/display-products/import-excel`, {
+          method: "POST",
+          headers: {
+            ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+          },
+          body: fd,
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Erreur lors de l'import");
+        }
+
+        infoEl.textContent =
+          `Import terminé : ${data.created} créés, ${data.updated} mis à jour, ${data.skipped} ignorés.`;
+        infoEl.style.display = "block";
+      } catch (err) {
+        errorEl.textContent = err.message || "Erreur inconnue lors de l'import";
+        errorEl.style.display = "block";
+      }
+    });
+  </script>
+{% endblock %}
